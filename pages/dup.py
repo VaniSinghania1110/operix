@@ -1,797 +1,711 @@
-
 import streamlit as st
+import requests
+import json
 
-# Page config
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="NegotiatorAI")
 
-# =========================
-# YOUR ORIGINAL HTML UI
-# =========================
-PAGE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NegotiatorAI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.3-70b-versatile"
+
+# ── Session state init ────────────────────────────────────────────────────────
+for k in ["step","result","deals","handle_reply_id","handle_reply_result","error"]:
+    if k not in st.session_state:
+        st.session_state[k] = None
+if "deals" not in st.session_state or st.session_state.deals is None:
+    st.session_state.deals = []
+if "step" not in st.session_state or st.session_state.step is None:
+    st.session_state.step = 1
+
+def call_groq(api_key, messages):
+    resp = requests.post(
+        GROQ_URL,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+        json={"model": MODEL, "temperature": 0.65, "max_tokens": 1800, "messages": messages},
+        timeout=60
+    )
+    data = resp.json()
+    if "error" in data:
+        raise Exception(data["error"].get("message", "Groq API error"))
+    return data["choices"][0]["message"]["content"]
+
+def parse_json(text):
+    text = text.replace("```json","").replace("```","").strip()
+    try:
+        return json.loads(text)
+    except:
+        import re
+        m = re.search(r'\{[\s\S]*\}', text)
+        if m:
+            try: return json.loads(m.group(0))
+            except: pass
+    return None
+
+def fmt_pct(quoted, target):
+    try:
+        import re
+        q = float(re.sub(r'[^0-9.]','',quoted))
+        t = float(re.sub(r'[^0-9.]','',target))
+        if q > 0: return f"{round((q-t)/q*100)}%"
+    except: pass
+    return ""
+
+# ── Global CSS ────────────────────────────────────────────────────────────────
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*,::before,::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
 :root{
-  --void:#040507;--deep:#080b12;--layer1:#0d1018;--layer2:#111520;--layer3:#161b28;
-  --edge:#1d2333;--edge2:#242d42;--fade:#3a4560;--muted:#5a6785;--body:#8b97b8;
-  --text:#c8d3ee;--bright:#e8eeff;--white:#f4f6ff;
-  --gold:#e8b84b;--gold2:#c49b2e;--gold-soft:rgba(232,184,75,0.12);--gold-rim:rgba(232,184,75,0.25);
-  --emerald:#10d48a;--emerald-soft:rgba(16,212,138,0.1);--emerald-rim:rgba(16,212,138,0.22);
-  --sapphire:#4d9ef7;--sapphire-soft:rgba(77,158,247,0.1);
-  --ruby:#f74d6d;--ruby-soft:rgba(247,77,109,0.1);--ruby-rim:rgba(247,77,109,0.25);
-  --amber:#f0a040;--amber-soft:rgba(240,160,64,0.1);--r:12px;
+  --bg:#0b0d0f;--sf:#13161a;--card:#181c21;--b1:#232830;--b2:#2e3540;
+  --tx:#e8edf2;--mu:#5a6578;--dim:#3a4455;
+  --blue:#4da6ff;--green:#00e090;--red:#ff4757;--orange:#ff6b35;
+  --yellow:#ffc947;--teal:#00cfc8;--purple:#b06bff;
 }
-body{font-family:'Manrope',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden;}
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.035;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size:180px 180px;
+html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
+  background:var(--bg)!important;color:var(--tx)!important;
+  font-family:'IBM Plex Sans',sans-serif!important;
 }
-.ambiance{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-.ambiance::before{content:'';position:absolute;width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(232,184,75,0.055) 0%,transparent 65%);top:-400px;right:-300px;}
-.ambiance::after{content:'';position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(16,212,138,0.04) 0%,transparent 65%);bottom:-300px;left:-250px;}
-nav{position:sticky;top:0;z-index:100;height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(4,5,7,0.85);border-bottom:1px solid var(--edge);backdrop-filter:blur(24px);}
-.logo{display:flex;align-items:center;gap:11px;}
-.logo-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;font-size:17px;box-shadow:0 0 20px rgba(232,184,75,0.3);position:relative;}
-.logo-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--white);letter-spacing:-0.3px;}
-.logo-name em{font-style:normal;color:var(--gold);}
-.nav-tags{display:flex;gap:8px;align-items:center;}
-.nt{font-size:10px;font-weight:700;letter-spacing:0.8px;padding:4px 11px;border-radius:20px;text-transform:uppercase;}
-.nt-gold{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-rim);}
-.nt-em{background:var(--emerald-soft);color:var(--emerald);border:1px solid var(--emerald-rim);}
-.nt-sap{background:var(--sapphire-soft);color:var(--sapphire);border:1px solid rgba(77,158,247,0.25);}
-.pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--emerald);margin-right:4px;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 rgba(16,212,138,0)}50%{opacity:0.5;box-shadow:0 0 8px rgba(16,212,138,0.5)}}
-.canvas{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:52px 28px 120px;}
-.hero{margin-bottom:56px;position:relative;}
-.hero-sup{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
-.hero-sup::before{content:'';display:block;width:28px;height:1px;background:var(--gold);}
-.hero h1{font-family:'Playfair Display',serif;font-size:clamp(38px,6vw,64px);font-weight:900;line-height:1.05;color:var(--white);letter-spacing:-1px;margin-bottom:18px;}
-.hero h1 .accent{background:linear-gradient(90deg,var(--gold),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-style:italic;}
-.hero-desc{font-size:16px;color:var(--body);line-height:1.8;max-width:520px;margin-bottom:32px;}
-.hero-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:12px;}
-.hf-step{display:flex;align-items:center;gap:8px;}
-.hf-num{width:28px;height:28px;border-radius:50%;background:var(--layer2);border:1px solid var(--edge2);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--gold);font-family:'JetBrains Mono',monospace;flex-shrink:0;}
-.hf-label{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;}
-.hf-arr{color:var(--edge2);margin:0 10px;font-size:14px;}
-.wizard{display:flex;gap:0;margin-bottom:40px;background:var(--layer1);border:1px solid var(--edge);border-radius:14px;overflow:hidden;padding:4px;}
-.wz-tab{flex:1;padding:12px 8px;text-align:center;cursor:pointer;border-radius:10px;transition:all 0.25s;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;}
-.wz-tab .wt-ico{font-size:18px;}
-.wz-tab .wt-num{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--edge2);text-transform:uppercase;margin-bottom:1px;}
-.wz-tab.active{background:var(--layer3);color:var(--white);}
-.wz-tab.active .wt-num{color:var(--gold);}
-.wz-tab.done{color:var(--emerald);}
-.wz-tab.done .wt-num{color:var(--emerald);}
-.panel{display:none;animation:fadeUp 0.35s ease both;}
-.panel.active{display:block;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.srule{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
-.srule h2{font-size:13px;font-weight:700;color:var(--bright);white-space:nowrap;letter-spacing:0.3px;}
-.srule-line{flex:1;height:1px;background:var(--edge);}
-.gcard{background:var(--layer1);border:1px solid var(--edge);border-radius:16px;padding:28px 30px;margin-bottom:20px;position:relative;overflow:hidden;}
-.gcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--edge2),transparent);}
-.fg{display:grid;gap:16px;margin-bottom:16px;}
-.fg-3{grid-template-columns:1fr 1fr 1fr;}
-.fg-2{grid-template-columns:1fr 1fr;}
-.fg-1{grid-template-columns:1fr;}
-@media(max-width:640px){.fg-3,.fg-2{grid-template-columns:1fr;}}
-.field{}
-.field label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:0.8px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
-.field label .req{color:var(--ruby);font-size:10px;}
-.field label .opt{font-size:9px;color:var(--edge2);letter-spacing:1px;background:var(--layer2);padding:1px 6px;border-radius:20px;font-weight:600;}
-.field input,.field select,.field textarea{width:100%;background:var(--layer2);border:1.5px solid var(--edge);border-radius:10px;color:var(--bright);font-family:'Manrope',sans-serif;font-size:14px;font-weight:500;padding:13px 16px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;appearance:none;-webkit-appearance:none;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,184,75,0.1);}
-.field input::placeholder,.field textarea::placeholder{color:var(--fade);}
-.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6785' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px;cursor:pointer;}
-.field select option{background:var(--layer2);}
-.field textarea{resize:vertical;min-height:96px;line-height:1.65;}
-.field-hint{font-size:11px;color:var(--fade);margin-top:6px;line-height:1.5;}
-.tip-box{background:var(--gold-soft);border:1px solid var(--gold-rim);border-radius:10px;padding:13px 16px;margin-bottom:16px;display:flex;gap:10px;font-size:12px;color:#c9a84c;line-height:1.6;}
-.tip-box .ti{font-size:16px;flex-shrink:0;}
-.strat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
-@media(max-width:640px){.strat-grid{grid-template-columns:1fr 1fr;}}
-.sg{border:1.5px solid var(--edge);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.2s;background:var(--layer2);}
-.sg:hover{border-color:var(--gold);background:var(--gold-soft);}
-.sg.on{background:var(--gold-soft);border-color:var(--gold);}
-.sg-ico{font-size:20px;margin-bottom:6px;}
-.sg-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
-.sg.on .sg-name{color:var(--gold);}
-.sg-desc{font-size:10px;color:var(--muted);}
-.power-wrap{margin-bottom:24px;}
-.power-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.power-lbl{font-size:11px;font-weight:700;letter-spacing:0.8px;color:var(--muted);text-transform:uppercase;}
-.power-val{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;}
-.power-track{height:6px;background:var(--edge);border-radius:99px;overflow:hidden;}
-.power-fill{height:100%;border-radius:99px;transition:width 0.5s ease;background:linear-gradient(90deg,var(--ruby),var(--amber),var(--gold),var(--emerald));}
-.nav-row{display:flex;gap:12px;margin-top:24px;}
-.btn-next{flex:1;padding:15px;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0d0e10;box-shadow:0 4px 20px rgba(232,184,75,0.25);letter-spacing:0.3px;}
-.btn-next:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 30px rgba(232,184,75,0.4);}
-.btn-next:disabled{opacity:0.45;cursor:not-allowed;transform:none!important;}
-.btn-back{padding:15px 20px;border:1.5px solid var(--edge2);border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif;transition:all 0.2s;background:transparent;color:var(--body);}
-.btn-back:hover{color:var(--white);border-color:var(--fade);}
-.term{background:#030508;border:1px solid var(--edge);border-radius:14px;overflow:hidden;}
-.term-bar{background:#060810;padding:12px 18px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--edge);}
-.td{width:11px;height:11px;border-radius:50%;}
-.td.r{background:#ff5f56;}.td.y{background:#febc2e;}.td.g{background:#28c840;}
-.term-lbl{font-size:11px;color:var(--muted);margin-left:8px;font-family:'JetBrains Mono',monospace;}
-.term-body{padding:18px 20px;min-height:220px;max-height:320px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;}
-.term-body::-webkit-scrollbar{width:4px;}
-.term-body::-webkit-scrollbar-thumb{background:var(--edge2);border-radius:2px;}
-.t-idle{color:var(--fade);text-align:center;padding:40px 0;font-size:12px;}
-.t-row{display:flex;gap:10px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.025);animation:tr 0.2s ease both;}
-@keyframes tr{from{opacity:0;transform:translateX(-3px)}to{opacity:1}}
-.t-ts{color:var(--fade);min-width:68px;font-size:10px;padding-top:2px;flex-shrink:0;}
-.t-msg{flex:1;word-break:break-word;}
-.ci{color:#58a6ff;}.cd{color:#484f58;font-style:italic;}.cok{color:#3fb950;}.cw{color:#d29922;}.ce{color:#f85149;}.cai{color:#bc8cff;}
-.spin-row{display:flex;align-items:center;gap:9px;padding:6px 0;color:var(--gold);font-size:12px;}
-.sdots{display:flex;gap:3px;}
-.sd{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:sb 1s infinite;}
-.sd:nth-child(2){animation-delay:.15s;}.sd:nth-child(3){animation-delay:.3s;}
-@keyframes sb{0%,80%,100%{transform:translateY(0);opacity:0.3}40%{transform:translateY(-6px);opacity:1}}
-.ep{background:var(--layer2);border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-top:16px;display:none;}
-.ep.show{display:block;animation:fadeUp 0.3s ease both;}
-.ep-head{background:var(--layer3);border-bottom:1px solid var(--edge);padding:14px 18px;}
-.ep-row{display:flex;gap:10px;font-size:12px;margin-bottom:5px;}
-.ep-row:last-child{margin-bottom:0;}
-.ep-k{color:var(--muted);font-weight:700;min-width:60px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.5px;}
-.ep-v{color:var(--text);}
-.ep-body{padding:20px;font-size:12.5px;color:var(--body);line-height:1.85;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;}
-.deals-stack{display:flex;flex-direction:column;gap:14px;}
-.deal{background:var(--layer1);border:1px solid var(--edge);border-radius:16px;overflow:hidden;transition:border-color 0.2s;}
-.deal:hover{border-color:var(--edge2);}
-.deal-top{padding:20px 22px;display:flex;gap:14px;align-items:flex-start;}
-.deal-ico{font-size:32px;flex-shrink:0;line-height:1;}
-.deal-info{flex:1;}
-.deal-vendor{font-size:15px;font-weight:700;color:var(--white);margin-bottom:2px;}
-.deal-product{font-size:12px;color:var(--body);margin-bottom:8px;}
-.deal-subject{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:10px;}
-.deal-chips{display:flex;gap:7px;flex-wrap:wrap;}
-.dc{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.3px;}
-.dc-sent{background:var(--sapphire-soft);color:var(--sapphire);border:1px solid rgba(77,158,247,0.25);}
-.dc-neg{background:rgba(240,160,64,0.1);color:var(--amber);border:1px solid rgba(240,160,64,0.2);}
-.dc-done{background:var(--emerald-soft);color:var(--emerald);border:1px solid var(--emerald-rim);}
-.dc-demo{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-rim);}
-.deal-prices{text-align:right;flex-shrink:0;}
-.dp-orig{font-size:11px;color:var(--muted);text-decoration:line-through;margin-bottom:3px;}
-.dp-current{font-size:22px;font-weight:800;color:var(--emerald);font-family:'JetBrains Mono',monospace;line-height:1;}
-.dp-save{font-size:10px;color:var(--emerald);margin-top:3px;font-weight:600;}
-.deal-bar{padding:12px 22px;background:var(--layer2);border-top:1px solid var(--edge);display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
-.da{padding:7px 15px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif;border:1.5px solid;transition:all 0.15s;display:flex;align-items:center;gap:5px;}
-.da:hover{filter:brightness(1.15);}
-.da-gold{background:var(--gold-soft);color:var(--gold);border-color:var(--gold-rim);}
-.da-em{background:var(--emerald-soft);color:var(--emerald);border-color:var(--emerald-rim);}
-.da-sap{background:var(--sapphire-soft);color:var(--sapphire);border-color:rgba(77,158,247,0.25);}
-.da-ruby{background:var(--ruby-soft);color:var(--ruby);border-color:var(--ruby-rim);}
-.deal-time{font-size:10px;color:var(--fade);margin-left:auto;font-family:'JetBrains Mono',monospace;}
-.empty-state{text-align:center;padding:60px 24px;border:1.5px dashed var(--edge);border-radius:16px;color:var(--fade);}
-.empty-state .ei{font-size:48px;margin-bottom:14px;opacity:0.6;}
-.empty-state h3{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:6px;}
-.empty-state p{font-size:13px;}
-.modal-bg{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;backdrop-filter:blur(12px);}
-.modal-bg.show{display:flex;}
-.modal{background:var(--layer1);border:1px solid var(--edge2);border-radius:22px;padding:40px;max-width:500px;width:94%;position:relative;overflow:hidden;animation:mIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
-@keyframes mIn{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}
-.modal-glow{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--emerald),var(--sapphire));}
-.modal-icon{font-size:50px;text-align:center;margin-bottom:14px;}
-.modal h3{font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:var(--white);text-align:center;margin-bottom:8px;}
-.modal-sub{font-size:13px;color:var(--body);text-align:center;margin-bottom:24px;line-height:1.65;}
-.pricebox{background:var(--layer2);border:1px solid var(--edge2);border-radius:14px;padding:22px;margin-bottom:18px;text-align:center;}
-.pb-lbl{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
-.pb-val{font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:var(--gold);line-height:1;}
-.pb-sub{font-size:12px;color:var(--muted);margin-top:6px;}
-.modal-info{background:var(--emerald-soft);border:1px solid var(--emerald-rim);border-radius:10px;padding:13px 16px;font-size:12px;color:#6ee7b7;margin-bottom:20px;line-height:1.65;}
-.modal-info strong{color:var(--emerald);}
-.mbtn-row{display:flex;gap:10px;}
-.mbtn-primary{flex:1;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0d0e10;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;transition:all 0.2s;letter-spacing:0.2px;}
-.mbtn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);}
-.mbtn-ghost{background:var(--layer2);color:var(--body);border:1.5px solid var(--edge2);border-radius:11px;padding:14px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif;transition:all 0.2s;}
-.mbtn-ghost:hover{color:var(--white);}
-footer{position:relative;z-index:1;text-align:center;padding:20px;border-top:1px solid var(--edge);font-size:11px;color:var(--muted);letter-spacing:0.3px;}
-footer span{color:var(--body);}
+header[data-testid="stHeader"],footer,[data-testid="stToolbar"],[data-testid="stDecoration"]{display:none!important}
+.block-container{padding:0!important;max-width:100%!important}
+
+/* NAV */
+.n-nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid var(--b1);background:var(--bg)}
+.n-nav-l{display:flex;align-items:center;gap:14px}
+.n-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--yellow),#cc8800);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.n-brand{font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--tx)}
+.n-brand span{color:var(--yellow)}
+.n-badge{display:flex;align-items:center;gap:6px;border:1px solid var(--b2);border-radius:20px;padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--tx)}
+.n-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.n-nav-r{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mu)}
+
+/* STEPS BAR */
+.steps-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:4px;margin:20px 0}
+.step-tab{padding:10px 8px;text-align:center;border-radius:8px;cursor:default;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.step-tab .st-num{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu)}
+.step-tab .st-ico{font-size:18px}
+.step-tab .st-label{font-size:11px;font-weight:600;color:var(--mu)}
+.step-tab.active{background:var(--card);border:1px solid var(--b2)}
+.step-tab.active .st-num{color:var(--yellow)}
+.step-tab.active .st-label{color:var(--tx)}
+.step-tab.done .st-num{color:var(--green)}
+.step-tab.done .st-label{color:var(--green)}
+
+/* SECTION RULE */
+.srule{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.srule-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mu);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.srule-title::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--yellow)}
+.srule-line{flex:1;height:1px;background:var(--b1)}
+
+/* FORM CARDS */
+.fcard{background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:20px;margin-bottom:16px}
+.tip-box{background:rgba(255,201,71,0.06);border:1px solid rgba(255,201,71,0.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;font-size:12px;color:#c9a840;line-height:1.6;font-family:'IBM Plex Mono',monospace}
+
+/* STRATEGY GRID */
+.strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.sg{border:1.5px solid var(--b2);border-radius:8px;padding:12px;cursor:pointer;transition:all 0.2s;background:var(--card)}
+.sg:hover{border-color:var(--yellow);background:rgba(255,201,71,0.06)}
+
+/* POWER METER */
+.power-wrap{margin-bottom:8px}
+.power-track{height:5px;background:var(--b1);border-radius:99px;overflow:hidden;margin-top:8px}
+.power-fill{height:100%;border-radius:99px;transition:width 0.4s ease;background:linear-gradient(90deg,var(--red),var(--orange),var(--yellow),var(--green))}
+
+/* DEAL CARDS */
+.deal-card{background:var(--sf);border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-bottom:12px;transition:border-color 0.15s}
+.deal-card:hover{border-color:var(--b2)}
+.deal-top{display:flex;align-items:flex-start;gap:14px;padding:16px}
+.deal-ico{font-size:28px;flex-shrink:0}
+.deal-info{flex:1}
+.deal-vendor{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:2px}
+.deal-product{font-size:11px;color:var(--mu);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.deal-subject{font-size:11px;color:var(--dim);margin-bottom:8px;font-style:italic}
+.deal-chips{display:flex;gap:6px;flex-wrap:wrap}
+.dc{font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:0.5px;font-family:'IBM Plex Mono',monospace}
+.dc-sent{background:rgba(77,158,247,.12);color:var(--blue);border:1px solid rgba(77,158,247,.25)}
+.dc-neg{background:rgba(255,201,71,.1);color:var(--yellow);border:1px solid rgba(255,201,71,.2)}
+.dc-done{background:rgba(0,224,144,.1);color:var(--green);border:1px solid rgba(0,224,144,.2)}
+.deal-prices{text-align:right;flex-shrink:0}
+.dp-orig{font-size:11px;color:var(--mu);text-decoration:line-through;margin-bottom:2px;font-family:'IBM Plex Mono',monospace}
+.dp-current{font-size:22px;font-weight:700;color:var(--green);font-family:'IBM Plex Mono',monospace;line-height:1}
+.dp-save{font-size:10px;color:var(--green);margin-top:2px;font-weight:600}
+.deal-bar{padding:10px 16px;background:var(--card);border-top:1px solid var(--b1);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* EMAIL PREVIEW */
+.email-preview{background:var(--card);border:1px solid var(--b1);border-radius:8px;overflow:hidden;margin-top:12px}
+.ep-header{background:var(--sf);border-bottom:1px solid var(--b1);padding:12px 16px}
+.ep-row{display:flex;gap:8px;font-size:11px;margin-bottom:4px}
+.ep-row:last-child{margin-bottom:0}
+.ep-k{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);min-width:55px}
+.ep-v{color:var(--tx);font-size:11px}
+.ep-body{padding:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mu);line-height:1.8;white-space:pre-wrap;max-height:300px;overflow-y:auto}
+
+/* RESULT CARD */
+.result-card{background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:20px;margin-bottom:12px;position:relative}
+.result-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0 2px 2px 0}
+.rc-yellow::before{background:var(--yellow)}
+.rc-green::before{background:var(--green)}
+.rc-blue::before{background:var(--blue)}
+.rc-red::before{background:var(--red)}
+.rc-header{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.rc-header::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.rc-content{font-size:13px;color:var(--mu);line-height:1.8}
+.rc-big{font-family:'IBM Plex Mono',monospace;font-size:32px;font-weight:700;color:var(--green);letter-spacing:-1px;line-height:1;margin:8px 0}
+.rc-sub{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+
+/* FORM OVERRIDES */
+div[data-testid="stTextInput"] label,div[data-testid="stTextArea"] label,div[data-testid="stSelectbox"] label,div[data-testid="stNumberInput"] label{
+  color:var(--mu)!important;font-family:'IBM Plex Mono',monospace!important;
+  font-size:9px!important;font-weight:600!important;letter-spacing:2px!important;text-transform:uppercase!important;
+}
+div[data-testid="stTextInput"] input,div[data-testid="stNumberInput"] input{
+  background:var(--card)!important;border:1px solid var(--b2)!important;
+  border-radius:8px!important;color:var(--tx)!important;
+  font-family:'IBM Plex Mono',monospace!important;font-size:13px!important;
+}
+div[data-testid="stTextArea"] textarea{
+  background:var(--card)!important;border:1px solid var(--b2)!important;
+  border-radius:8px!important;color:var(--tx)!important;
+  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;
+}
+div[data-testid="stSelectbox"] > div > div > div{
+  background:var(--card)!important;border:1px solid var(--b2)!important;
+  border-radius:8px!important;color:var(--tx)!important;
+  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;
+}
+div[data-testid="stForm"]{border:none!important;padding:0!important;background:transparent!important}
+
+/* PRIMARY BUTTON */
+div[data-testid="stFormSubmitButton"] button,
+button[kind="primary"]{
+  background:var(--yellow)!important;border:none!important;border-radius:8px!important;
+  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;font-weight:700!important;
+  letter-spacing:2px!important;text-transform:uppercase!important;
+  color:#0b0d0f!important;padding:14px 24px!important;width:100%!important;
+  transition:all 0.2s!important;
+}
+div[data-testid="stFormSubmitButton"] button p,button[kind="primary"] p{
+  color:#0b0d0f!important;font-family:'IBM Plex Mono',monospace!important;
+  font-size:12px!important;font-weight:700!important;letter-spacing:2px!important;
+}
+div[data-testid="stFormSubmitButton"] button:hover{filter:brightness(1.1)!important}
+
+/* SECONDARY BUTTON */
+button[kind="secondary"]{
+  background:transparent!important;border:1px solid var(--b2)!important;border-radius:8px!important;
+  font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;
+  letter-spacing:1.5px!important;text-transform:uppercase!important;
+  color:var(--mu)!important;padding:10px 16px!important;
+}
+button[kind="secondary"]:hover{border-color:var(--yellow)!important;color:var(--yellow)!important}
+button[kind="secondary"] p{color:inherit!important;font-family:inherit!important;font-size:inherit!important}
+
+div[data-testid="stSpinner"] p{color:var(--mu)!important;font-family:'IBM Plex Mono',monospace!important;font-size:11px!important}
+div[data-testid="stAlert"]{background:rgba(255,71,87,.08)!important;border:1px solid rgba(255,71,87,.25)!important;border-radius:8px!important}
+div[data-testid="stAlert"] p{color:var(--red)!important;font-family:'IBM Plex Mono',monospace!important;font-size:12px!important}
+div[data-testid="stSuccess"]{background:rgba(0,224,144,.06)!important;border:1px solid rgba(0,224,144,.2)!important;border-radius:8px!important}
+div[data-testid="stSuccess"] p{color:var(--green)!important}
+.empty-state{text-align:center;padding:48px 24px;border:1.5px dashed var(--b1);border-radius:10px;color:var(--dim)}
+.empty-state .ei{font-size:40px;margin-bottom:12px;opacity:0.5}
+.empty-state h3{font-size:14px;font-weight:600;color:var(--mu);margin-bottom:4px}
+.empty-state p{font-size:12px;font-family:'IBM Plex Mono',monospace}
 </style>
-</head>
-<body>
-<div class="ambiance"></div>
 
-<nav>
-  <div class="logo">
-    <div class="logo-mark">🤝</div>
-    <div class="logo-name">Negotiator<em>AI</em></div>
+<div class="n-nav">
+  <div class="n-nav-l">
+    <div class="n-logo">🤝</div>
+    <div class="n-brand">Negotiator<span>AI</span></div>
+    <div class="n-badge">AI PROCUREMENT AGENT</div>
   </div>
-
-</nav>
-
-<div class="canvas">
-
-  <div class="hero">
-    <div class="hero-sup">Autonomous Deal Negotiation</div>
-    <h1>Your AI Agent That<br><span class="accent">Fights For Best Price</span></h1>
-    <p class="hero-desc">Enter your deal. The AI crafts a killer negotiation email, sends it to your vendor, and keeps replying until you get the price you want.</p>
-    <div class="hero-flow">
-      <div class="hf-step"><div class="hf-num">1</div><span class="hf-label">Fill deal details</span></div>
-      <div class="hf-arr">→</div>
-      <div class="hf-step"><div class="hf-num">2</div><span class="hf-label">AI writes email</span></div>
-      <div class="hf-arr">→</div>
-      <div class="hf-step"><div class="hf-num">3</div><span class="hf-label">Sent to vendor</span></div>
-      <div class="hf-arr">→</div>
-      <div class="hf-step"><div class="hf-num">4</div><span class="hf-label">AI handles replies</span></div>
-      <div class="hf-arr">→</div>
-      <div class="hf-step"><div class="hf-num">5</div><span class="hf-label">Deal closed 🏆</span></div>
-    </div>
-  </div>
-
-  <div class="wizard" id="wizard">
-    <div class="wz-tab active" id="tab1" onclick="goTab(1)">
-      <span class="wt-num">Step 01</span><span class="wt-ico">🔧</span><span>Setup</span>
-    </div>
-    <div class="wz-tab" id="tab2" onclick="goTab(2)">
-      <span class="wt-num">Step 02</span><span class="wt-ico">📋</span><span>Deal Info</span>
-    </div>
-    <div class="wz-tab" id="tab3" onclick="goTab(3)">
-      <span class="wt-num">Step 03</span><span class="wt-ico">⚔️</span><span>Strategy</span>
-    </div>
-    <div class="wz-tab" id="tab4" onclick="goTab(4)">
-      <span class="wt-num">Step 04</span><span class="wt-ico">🚀</span><span>Send &amp; Track</span>
-    </div>
-  </div>
-
-  <!-- PANEL 1: SETUP -->
-  <div class="panel active" id="panel1">
-    <div class="srule"><h2>EmailJS Configuration</h2><div class="srule-line"></div></div>
-    <div class="tip-box">
-      <span class="ti">💡</span>
-      <div><strong style="color:var(--gold);">Demo Mode:</strong> Preview your negotiation email without sending real emails. Add EmailJS keys above to send actual emails.</div>
-    </div>
-    <div class="gcard">
-      <div class="fg fg-3" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Service ID <span class="opt">optional</span></label>
-          <input type="text" id="cfg_svc" placeholder="service_xxxxxxx">
-        </div>
-        <div class="field">
-          <label>Template ID <span class="opt">optional</span></label>
-          <input type="text" id="cfg_tpl" placeholder="template_xxxxxxx">
-        </div>
-        <div class="field">
-          <label>Public Key <span class="opt">optional</span></label>
-          <input type="text" id="cfg_key" placeholder="your_public_key">
-        </div>
-      </div>
-      <div class="fg fg-2">
-        <div class="field">
-          <label>Your Name / Company <span class="req">*</span></label>
-          <input type="text" id="cfg_name" placeholder="Rahul Sharma / TechCorp India" value="Your Company">
-        </div>
-        <div class="field">
-          <label>Your Email <span class="req">*</span></label>
-          <input type="email" id="cfg_email" placeholder="you@company.com" value="procurement@yourcompany.com">
-          <div class="field-hint">📬 Vendor replies land here</div>
-        </div>
-      </div>
-    </div>
-    <div class="nav-row">
-      <button class="btn-next" onclick="goTab(2)">Continue to Deal Details →</button>
-    </div>
-  </div>
-
-  <!-- PANEL 2: DEAL -->
-  <div class="panel" id="panel2">
-    <div class="srule"><h2>Procurement Information</h2><div class="srule-line"></div></div>
-    <div class="gcard">
-      <div class="fg fg-2" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Vendor / Supplier <span class="req">*</span></label>
-          <input type="text" id="n_vendor" placeholder="Samsung India, Infosys, Reliance...">
-        </div>
-        <div class="field">
-          <label>Vendor Email <span class="req">*</span></label>
-          <input type="email" id="n_email" placeholder="sales@vendor.com">
-        </div>
-      </div>
-      <div class="fg fg-3" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Product / Service <span class="req">*</span></label>
-          <input type="text" id="n_product" placeholder="Laptops, Raw Materials...">
-        </div>
-        <div class="field">
-          <label>Quantity <span class="opt">optional</span></label>
-          <input type="text" id="n_qty" placeholder="50 units, 500 kg...">
-        </div>
-        <div class="field">
-          <label>Delivery Needed</label>
-          <select id="n_delivery">
-            <option value="immediately / ASAP">Immediately / ASAP</option>
-            <option value="within 2 weeks">Within 2 weeks</option>
-            <option value="within 1 month" selected>Within 1 month</option>
-            <option value="within 3 months">Within 3 months</option>
-            <option value="flexible">Flexible</option>
-          </select>
-        </div>
-      </div>
-      <div class="fg fg-3" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Vendor's Quoted Price <span class="req">*</span></label>
-          <input type="text" id="n_quoted" placeholder="₹5,00,000 or $10,000">
-        </div>
-        <div class="field">
-          <label>Your Target Price <span class="req">*</span></label>
-          <input type="text" id="n_target" placeholder="₹3,50,000 or $7,000">
-          <div class="field-hint">🎯 AI fights hard to reach this</div>
-        </div>
-        <div class="field">
-          <label>Max Budget <span class="opt">private</span></label>
-          <input type="text" id="n_budget" placeholder="₹4,00,000 or $8,500">
-          <div class="field-hint">🔒 Never revealed to vendor</div>
-        </div>
-      </div>
-      <div class="fg fg-2">
-        <div class="field">
-          <label>Payment Terms</label>
-          <select id="n_payment">
-            <option value="100% payment upfront">100% Upfront — Best Leverage</option>
-            <option value="50% upfront 50% on delivery">50/50 Split</option>
-            <option value="Net 30 days">Net 30 Days</option>
-            <option value="Net 60 days">Net 60 Days</option>
-            <option value="Milestone-based">Milestone-Based</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Negotiation Tone</label>
-          <select id="n_tone">
-            <option value="firm and professional">Firm &amp; Professional</option>
-            <option value="highly aggressive">Highly Aggressive</option>
-            <option value="collaborative partner-focused">Collaborative Partner</option>
-            <option value="urgent with hard deadline">Urgent — Hard Deadline</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="nav-row">
-      <button class="btn-back" onclick="goTab(1)">← Back</button>
-      <button class="btn-next" onclick="goTab(3)">Continue to Strategy →</button>
-    </div>
-  </div>
-
-  <!-- PANEL 3: STRATEGY -->
-  <div class="panel" id="panel3">
-    <div class="srule"><h2>Negotiation Strategy</h2><div class="srule-line"></div></div>
-    <div class="gcard" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Choose Your Primary Strategy</div>
-      <div class="strat-grid">
-        <div class="sg on" onclick="pickStrat(this,'bulk volume discount')" id="sg0">
-          <div class="sg-ico">📦</div><div class="sg-name">Bulk Discount</div><div class="sg-desc">Use quantity as leverage</div>
-        </div>
-        <div class="sg" onclick="pickStrat(this,'full upfront payment for discount')" id="sg1">
-          <div class="sg-ico">💰</div><div class="sg-name">Pay Upfront</div><div class="sg-desc">Offer instant full payment</div>
-        </div>
-        <div class="sg" onclick="pickStrat(this,'long-term partnership and repeat business')" id="sg2">
-          <div class="sg-ico">🤝</div><div class="sg-name">Long-term Partnership</div><div class="sg-desc">Promise repeat business</div>
-        </div>
-        <div class="sg" onclick="pickStrat(this,'competitor price matching — we have better quotes')" id="sg3">
-          <div class="sg-ico">⚔️</div><div class="sg-name">Beat Competitor</div><div class="sg-desc">Mention rival quotes</div>
-        </div>
-        <div class="sg" onclick="pickStrat(this,'strict budget constraint — cannot exceed')" id="sg4">
-          <div class="sg-ico">📊</div><div class="sg-name">Budget Cap</div><div class="sg-desc">Hard limit approach</div>
-        </div>
-        <div class="sg" onclick="pickStrat(this,'bundle multiple products for total deal')" id="sg5">
-          <div class="sg-ico">🎁</div><div class="sg-name">Bundle Deal</div><div class="sg-desc">Package multiple items</div>
-        </div>
-      </div>
-    </div>
-    <div class="gcard">
-      <div class="fg fg-1" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Your Leverage Points <span class="req">*</span></label>
-          <textarea id="n_leverage" placeholder="List everything you have. More = stronger AI. e.g:&#10;• Buying in bulk (50 units)&#10;• Can pay 100% upfront today&#10;• Loyal customer for 3 years&#10;• Comparing 3 vendor quotes right now&#10;• Can refer 5 new clients"></textarea>
-          <div class="field-hint">💪 This is the most important field — every point becomes a weapon for the AI</div>
-        </div>
-      </div>
-      <div class="fg fg-1" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Competitor Quotes <span class="opt">very powerful</span></label>
-          <input type="text" id="n_comp" placeholder="e.g. Competitor A quoted ₹3,80,000 · Vendor B at ₹4,00,000 for identical product">
-          <div class="field-hint">⚔️ The single strongest leverage you can have</div>
-        </div>
-      </div>
-      <div class="fg fg-1">
-        <div class="field">
-          <label>Additional Context <span class="opt">optional</span></label>
-          <textarea id="n_context" style="min-height:68px;" placeholder="Past relationship, previous orders, project urgency, specific requirements..."></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="gcard">
-      <div class="power-wrap" style="margin-bottom:0;">
-        <div class="power-head">
-          <span class="power-lbl">Negotiation Power</span>
-          <span class="power-val" id="powerVal" style="color:var(--muted)">—</span>
-        </div>
-        <div class="power-track"><div class="power-fill" id="powerFill" style="width:0%"></div></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="powerHint">Fill in the fields above to build your negotiation strength.</div>
-      </div>
-    </div>
-    <div class="nav-row">
-      <button class="btn-back" onclick="goTab(2)">← Back</button>
-      <button class="btn-next" id="sendBtn" onclick="runAgent()">🚀 Generate &amp; Send Email</button>
-    </div>
-  </div>
-
-  <!-- PANEL 4: TRACK -->
-  <div class="panel" id="panel4">
-    <div id="agentWrap" style="display:none;margin-bottom:24px;">
-      <div class="srule"><h2>AI Agent Live</h2><div class="srule-line"></div></div>
-      <div class="gcard" style="padding:0;overflow:hidden;">
-        <div class="term">
-          <div class="term-bar">
-            <div class="td r"></div><div class="td y"></div><div class="td g"></div>
-            <span class="term-lbl">negotiator-agent ~ deal processing</span>
-            <span style="margin-left:auto;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--fade);" id="modelLbl">Llama 3.3 70B · Groq</span>
-          </div>
-          <div class="term-body" id="logBox"><div class="t-idle">Starting agent...</div></div>
-        </div>
-        <div class="ep" id="epWrap">
-          <div class="ep-head">
-            <div class="ep-row"><span class="ep-k">FROM</span><span class="ep-v" id="ep_from"></span></div>
-            <div class="ep-row"><span class="ep-k">TO</span><span class="ep-v" id="ep_to"></span></div>
-            <div class="ep-row"><span class="ep-k">SUBJECT</span><span class="ep-v" id="ep_subj"></span></div>
-          </div>
-          <div class="ep-body" id="ep_body"></div>
-        </div>
-      </div>
-    </div>
-    <div class="srule"><h2>Deal Tracker</h2><div class="srule-line"></div></div>
-    <div id="dealTracker">
-      <div class="empty-state">
-        <div class="ei">📁</div>
-        <h3>No deals yet</h3>
-        <p>Complete the form and send your first negotiation email to see deals here.</p>
-      </div>
-    </div>
-    <div class="nav-row">
-      <button class="btn-back" onclick="goTab(3)">← New Negotiation</button>
-    </div>
-  </div>
-
+  <div class="n-nav-r">Llama 3.3 70B · Groq · 4-Step Wizard</div>
 </div>
+""", unsafe_allow_html=True)
 
-<!-- SENT MODAL -->
-<div class="modal-bg" id="sentModal">
-  <div class="modal">
-    <div class="modal-glow"></div>
-    <div class="modal-icon">📧</div>
-    <h3>Email Fired Off!</h3>
-    <div class="modal-sub">Your AI negotiation email has been sent to <strong id="sm_vendor" style="color:var(--white)"></strong>. The agent is actively fighting for your target price.</div>
-    <div class="pricebox">
-      <div class="pb-lbl">Target Price</div>
-      <div class="pb-val" id="sm_target"></div>
-      <div class="pb-sub">AI will keep pushing until this is achieved</div>
+# ── Layout ────────────────────────────────────────────────────────────────────
+left, right = st.columns([1.1, 2])
+
+with left:
+    st.markdown("<div style='padding:20px 16px 0'>", unsafe_allow_html=True)
+
+    # Hero
+    st.markdown("""
+    <div style='margin-bottom:20px'>
+      <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:8px'>
+        <span style='color:var(--yellow)'>○</span> Autonomous Deal Negotiation
+      </div>
+      <div style='font-size:34px;font-weight:700;line-height:1.1;letter-spacing:-1px;margin-bottom:10px'>
+        <span style='color:var(--tx)'>Your AI That</span><br>
+        <span style='color:var(--yellow)'>Fights For</span><br>
+        <span style='color:var(--green)'>Best Price.</span>
+      </div>
+      <p style='font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:12px'>
+        Fill your deal details → AI crafts a killer negotiation email → Handle vendor replies automatically until you close at your target price.
+      </p>
     </div>
-    <div class="modal-info">
-      <strong>What's next?</strong> When the vendor replies, go to your <strong>Deal Tracker</strong> and click <strong>"Handle Reply"</strong>. The AI reads their response and fires back a perfect counter-offer automatically.
+    """, unsafe_allow_html=True)
+
+    # Step tabs
+    s = st.session_state.step
+    def tab_cls(n):
+        if n == s: return "active"
+        if n < s: return "done"
+        return ""
+    st.markdown(f"""
+    <div class="steps-bar">
+      <div class="step-tab {tab_cls(1)}"><span class="st-num">Step 01</span><span class="st-ico">🔧</span><span class="st-label">Setup</span></div>
+      <div class="step-tab {tab_cls(2)}"><span class="st-num">Step 02</span><span class="st-ico">📋</span><span class="st-label">Deal Info</span></div>
+      <div class="step-tab {tab_cls(3)}"><span class="st-num">Step 03</span><span class="st-ico">⚔️</span><span class="st-label">Strategy</span></div>
+      <div class="step-tab {tab_cls(4)}"><span class="st-num">Step 04</span><span class="st-ico">🚀</span><span class="st-label">Send & Track</span></div>
     </div>
-    <div class="mbtn-row">
-      <button class="mbtn-primary" onclick="closeSent()">Track This Deal →</button>
-      <button class="mbtn-ghost" onclick="closeSent()">Close</button>
-    </div>
-  </div>
-</div>
+    """, unsafe_allow_html=True)
 
-<!-- RESULT MODAL -->
-<div class="modal-bg" id="resultModal">
-  <div class="modal">
-    <div class="modal-glow"></div>
-    <div class="modal-icon" id="rm_ico">🔄</div>
-    <h3 id="rm_title">Counter-Offer Sent</h3>
-    <div class="modal-sub" id="rm_sub"></div>
-    <div class="pricebox">
-      <div class="pb-lbl" id="rm_lbl">Negotiated Price</div>
-      <div class="pb-val" id="rm_price"></div>
-      <div class="pb-sub" id="rm_sub2"></div>
-    </div>
-    <div class="modal-info" id="rm_info"></div>
-    <div class="mbtn-row">
-      <button class="mbtn-primary" onclick="closeResult()">✓ Got It</button>
-    </div>
-  </div>
-</div>
+    # ── STEP 1: SETUP ─────────────────────────────────────────────────────────
+    if s == 1:
+        st.markdown("""
+        <div class="srule"><div class="srule-title">Configuration</div><div class="srule-line"></div></div>
+        <div class="tip-box">💡 &nbsp;<span><strong style='color:var(--yellow)'>Required:</strong> Add your Groq API key to generate real negotiation emails. Get one free at console.groq.com</span></div>
+        """, unsafe_allow_html=True)
+        with st.form("form_step1"):
+            api_key = st.text_input("Groq API Key ✱", placeholder="gsk_...", type="password",
+                                    value=st.session_state.get("cfg_api",""))
+            c1, c2 = st.columns(2)
+            with c1:
+                name = st.text_input("Your Name / Company ✱", placeholder="Rahul Sharma / TechCorp",
+                                     value=st.session_state.get("cfg_name","Your Company"))
+            with c2:
+                email = st.text_input("Your Email ✱", placeholder="procurement@company.com",
+                                      value=st.session_state.get("cfg_email","procurement@company.com"))
+            go1 = st.form_submit_button("→  Continue to Deal Details")
+        if go1:
+            if not api_key.strip():
+                st.error("Groq API key is required.")
+            elif not name.strip() or not email.strip():
+                st.error("Name and email are required.")
+            else:
+                st.session_state.cfg_api = api_key.strip()
+                st.session_state.cfg_name = name.strip()
+                st.session_state.cfg_email = email.strip()
+                st.session_state.step = 2
+                st.rerun()
 
-<footer>NegotiatorAI &bull; Powered by Llama 3.3 70B · Groq &bull; <span id="tokenInfo">—</span></footer>
+    # ── STEP 2: DEAL INFO ─────────────────────────────────────────────────────
+    elif s == 2:
+        st.markdown("""<div class="srule"><div class="srule-title">Procurement Information</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
+        with st.form("form_step2"):
+            c1, c2 = st.columns(2)
+            with c1: vendor = st.text_input("Vendor / Supplier ✱", placeholder="Samsung India, Infosys...",
+                                             value=st.session_state.get("n_vendor",""))
+            with c2: vemail = st.text_input("Vendor Email ✱", placeholder="sales@vendor.com",
+                                             value=st.session_state.get("n_email",""))
+            c1, c2, c3 = st.columns(3)
+            with c1: product = st.text_input("Product / Service ✱", placeholder="Laptops, Raw Materials...",
+                                              value=st.session_state.get("n_product",""))
+            with c2: qty = st.text_input("Quantity", placeholder="50 units, 500 kg...",
+                                          value=st.session_state.get("n_qty",""))
+            with c3: delivery = st.selectbox("Delivery Needed",
+                ["Immediately / ASAP","Within 2 weeks","Within 1 month","Within 3 months","Flexible"],
+                index=2)
+            c1, c2, c3 = st.columns(3)
+            with c1: quoted = st.text_input("Vendor's Quoted Price ✱", placeholder="₹5,00,000",
+                                             value=st.session_state.get("n_quoted",""))
+            with c2: target = st.text_input("Your Target Price ✱", placeholder="₹3,50,000",
+                                             value=st.session_state.get("n_target",""))
+            with c3: budget = st.text_input("Max Budget (private)", placeholder="₹4,00,000",
+                                             value=st.session_state.get("n_budget",""))
+            c1, c2 = st.columns(2)
+            with c1: payment = st.selectbox("Payment Terms",
+                ["100% upfront — best leverage","50/50 split","Net 30 days","Net 60 days","Milestone-based"])
+            with c2: tone = st.selectbox("Negotiation Tone",
+                ["Firm & professional","Highly aggressive","Collaborative partner","Urgent — hard deadline"])
+            c1b, c2b = st.columns(2)
+            with c1b: back2 = st.form_submit_button("← Back")
+            with c2b: go2 = st.form_submit_button("→  Continue to Strategy")
+        if back2:
+            st.session_state.step = 1; st.rerun()
+        if go2:
+            if not vendor.strip() or not product.strip() or not quoted.strip() or not target.strip():
+                st.error("Vendor, product, quoted price and target price are required.")
+            else:
+                for k,v in [("n_vendor",vendor),("n_email",vemail),("n_product",product),
+                             ("n_qty",qty),("n_delivery",delivery),("n_quoted",quoted),
+                             ("n_target",target),("n_budget",budget),("n_payment",payment),("n_tone",tone)]:
+                    st.session_state[k] = v
+                st.session_state.step = 3; st.rerun()
 
-<script>
-var GROQ_KEY = "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";
-var GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-var MODEL    = "llama-3.3-70b-versatile";
-var strategy = "bulk volume discount";
-var deals    = [];
-var curTab   = 1;
+    # ── STEP 3: STRATEGY ──────────────────────────────────────────────────────
+    elif s == 3:
+        st.markdown("""<div class="srule"><div class="srule-title">Negotiation Strategy</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
 
-function $(id){ return document.getElementById(id); }
-function val(id){ return $(id)?$(id).value.trim():''; }
+        strats = [
+            ("📦","Bulk Discount","Use quantity as leverage","bulk volume discount"),
+            ("💰","Pay Upfront","Offer instant full payment","full upfront payment for discount"),
+            ("🤝","Long-term Partner","Promise repeat business","long-term partnership and repeat business"),
+            ("⚔️","Beat Competitor","Mention rival quotes","competitor price matching — we have better quotes"),
+            ("📊","Budget Cap","Hard limit approach","strict budget constraint — cannot exceed"),
+            ("🎁","Bundle Deal","Package multiple items","bundle multiple products for total deal"),
+        ]
+        saved_strat = st.session_state.get("n_strategy","bulk volume discount")
+        cols = st.columns(3)
+        chosen_strat = saved_strat
+        # Use radio for strategy selection (rendered as custom HTML display + hidden selectbox)
+        strat_names = [f"{s[0]} {s[1]}" for s in strats]
+        strat_values = [s[3] for s in strats]
+        strat_descs = [s[2] for s in strats]
 
-function goTab(n){
-  for(var i=1;i<=4;i++){
-    $('panel'+i).classList.toggle('active', i===n);
-    $('tab'+i).classList.remove('active','done');
-    if(i===n) $('tab'+i).classList.add('active');
-    else if(i<n) $('tab'+i).classList.add('done');
-  }
-  curTab=n;
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+        st.markdown("""<div style='font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:10px'>Primary Strategy</div>""", unsafe_allow_html=True)
+        strat_choice = st.radio("", strat_names, horizontal=False,
+                                 index=strat_values.index(saved_strat) if saved_strat in strat_values else 0,
+                                 label_visibility="collapsed")
+        chosen_strat = strat_values[strat_names.index(strat_choice)]
 
-function pickStrat(el, s){
-  document.querySelectorAll('.sg').forEach(function(g){g.classList.remove('on');});
-  el.classList.add('on');
-  strategy=s;
-  calcPower();
-}
+        with st.form("form_step3"):
+            leverage = st.text_area("Your Leverage Points ✱",
+                placeholder="List everything:\n• Buying in bulk (50 units)\n• Can pay 100% upfront today\n• Loyal customer 3 years\n• Comparing 3 quotes right now",
+                height=120, value=st.session_state.get("n_leverage",""))
+            comp = st.text_input("Competitor Quotes (very powerful)",
+                placeholder="e.g. Competitor A quoted ₹3,80,000 · Vendor B at ₹4,00,000",
+                value=st.session_state.get("n_comp",""))
+            context = st.text_area("Additional Context (optional)",
+                placeholder="Past relationship, previous orders, urgency...",
+                height=68, value=st.session_state.get("n_context",""))
 
-function calcPower(){
-  var s=0;
-  if(val('n_vendor'))   s+=10;
-  if(val('n_email'))    s+=10;
-  if(val('n_product'))  s+=10;
-  if(val('n_quoted'))   s+=10;
-  if(val('n_target'))   s+=10;
-  if(val('n_leverage') && val('n_leverage').length>30) s+=25;
-  if(val('n_comp'))     s+=15;
-  if(val('n_budget'))   s+=5;
-  if(val('n_context'))  s+=5;
-  $('powerFill').style.width=s+'%';
-  var pv=$('powerVal'), ph=$('powerHint');
-  if(s<25){pv.textContent=s+'% Weak';pv.style.color='#f85149';ph.textContent='Add vendor info and leverage points to increase power.';}
-  else if(s<50){pv.textContent=s+'% Building';pv.style.color='#f0a040';ph.textContent='Add leverage points and competitor quotes for more power.';}
-  else if(s<75){pv.textContent=s+'% Strong 💪';pv.style.color='#e8b84b';ph.textContent='Good! Add competitor quotes to reach maximum power.';}
-  else{pv.textContent=s+'% Maximum Power 🔥';pv.style.color='#3fb950';ph.textContent='Excellent! Your AI agent will negotiate at full strength.';}
-}
+            # Power meter
+            power = 0
+            for fk in ["n_vendor","n_email","n_product","n_quoted","n_target"]:
+                if st.session_state.get(fk,""): power += 10
+            if len(st.session_state.get("n_leverage","")) > 30: power += 25
+            elif st.session_state.get("n_leverage",""): power += 10
+            if st.session_state.get("n_comp",""): power += 15
+            if st.session_state.get("n_budget",""): power += 5
 
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('input,select,textarea').forEach(function(el){
-    el.addEventListener('input',calcPower);el.addEventListener('change',calcPower);
-  });
-});
+            pcolor = "#ff4757" if power < 25 else "#ff6b35" if power < 50 else "#ffc947" if power < 75 else "#00e090"
+            plabel = "Weak" if power < 25 else "Building" if power < 50 else "Strong 💪" if power < 75 else "Maximum Power 🔥"
+            st.markdown(f"""
+            <div class="power-wrap">
+              <div style='display:flex;justify-content:space-between;margin-bottom:6px'>
+                <span style='font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu)'>Negotiation Power</span>
+                <span style='font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;color:{pcolor}'>{power}% {plabel}</span>
+              </div>
+              <div class="power-track"><div class="power-fill" style="width:{power}%"></div></div>
+            </div>
+            """, unsafe_allow_html=True)
 
-function L(step,msg,cls){
-  var b=$('logBox'),r=document.createElement('div');r.className='t-row';
-  var s=document.createElement('span');s.className='t-ts';s.textContent='['+step+']';
-  var m=document.createElement('span');m.className='t-msg '+(cls||'ci');m.textContent=msg;
-  r.appendChild(s);r.appendChild(m);b.appendChild(r);b.scrollTop=b.scrollHeight;
-}
-function showSpin(lbl){
-  var b=$('logBox'),d=document.createElement('div');
-  d.className='spin-row';d.id='spinner';
-  d.innerHTML='<div class="sdots"><div class="sd"></div><div class="sd"></div><div class="sd"></div></div><span>'+(lbl||'Thinking...')+'</span>';
-  b.appendChild(d);b.scrollTop=b.scrollHeight;
-}
-function rmSpin(){var s=$('spinner');if(s)s.remove();}
+            c1b, c2b = st.columns(2)
+            with c1b: back3 = st.form_submit_button("← Back")
+            with c2b: go3 = st.form_submit_button("🚀  Generate & Send Email")
 
-function groq(msgs,onOk,onErr){
-  fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-    body:JSON.stringify({model:MODEL,temperature:0.65,max_tokens:1800,messages:msgs})})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.error) throw new Error(d.error.message||'Groq error');
-    var t=((d.choices||[])[0]||{}).message?d.choices[0].message.content:'';
-    var u=d.usage||{};
-    $('tokenInfo').textContent='Tokens in:'+(u.prompt_tokens||0)+' out:'+(u.completion_tokens||0);
-    onOk(t);
-  }).catch(onErr);
-}
+        if back3:
+            st.session_state.step = 2; st.rerun()
+        if go3:
+            if not leverage.strip():
+                st.error("Please add at least one leverage point — this is how the AI negotiates!")
+            else:
+                st.session_state.n_leverage = leverage
+                st.session_state.n_comp = comp
+                st.session_state.n_context = context
+                st.session_state.n_strategy = chosen_strat
 
-function parseJ(t){
-  try{return JSON.parse(t.replace(/```json/g,'').replace(/```/g,'').trim());}
-  catch(e){var m=t.match(/\{[\s\S]*\}/);try{return JSON.parse(m[0]);}catch(e2){return null;}}
-}
+                # ── CALL GROQ API ──────────────────────────────────────────
+                v = st.session_state
+                SYS = """You are an elite procurement negotiation AI agent. Write devastatingly effective negotiation emails.
+Rules:
+- Use EVERY leverage point — never waste a single one
+- Be firm and authoritative, never desperate or weak
+- Make a SPECIFIC counter-offer with crystal-clear reasoning
+- Use competitor quotes as hard leverage if provided
+- Create urgency: mention a decision deadline (end of week)
+- Never reveal the maximum budget
+- Sign professionally as the buyer
+Return ONLY valid JSON (no markdown):
+{"subject":"subject","email":"full email body","reasoning":"why this will work (2 sentences)","confidence":85,"predicted_response":"vendor will likely say..."}"""
 
-function showEP(from,to,subj,body){
-  $('ep_from').textContent=from;$('ep_to').textContent=to;
-  $('ep_subj').textContent=subj;$('ep_body').textContent=body;
-  $('epWrap').classList.add('show');
-}
+                USR = f"""Write procurement negotiation email:
+From: {v.cfg_name} ({v.cfg_email})
+To: {v.n_vendor}
+Product: {v.n_product}{f" | Qty: {v.n_qty}" if v.n_qty else ""}
+Delivery: {v.n_delivery}
+Quoted: {v.n_quoted}
+Target: {v.n_target}{f"\nMax budget (NEVER reveal): {v.n_budget}" if v.n_budget else ""}
+Payment offer: {v.n_payment}
+Tone: {v.n_tone}
+Strategy: {v.n_strategy}
+Leverage:
+{leverage}{f"\nCompetitor quotes (use hard): {comp}" if comp else ""}{f"\nContext: {context}" if context else ""}
 
-function sendEmail(to,subj,body,fromName,fromEmail,cb){
-  var svc=val('cfg_svc'),tpl=val('cfg_tpl'),key=val('cfg_key');
-  if(!svc||!tpl||!key){
-    L('DEMO','No EmailJS keys — Demo Mode: preview shown, email not sent','cw');
-    setTimeout(function(){cb(true);},900);return;
-  }
-  emailjs.init(key);
-  emailjs.send(svc,tpl,{to_email:to,subject:subj,message:body,from_name:fromName,reply_to:fromEmail})
-  .then(function(){cb(false);})
-  .catch(function(err){L('WARN','EmailJS: '+(err.text||'failed')+' — Demo Mode','cw');cb(true);});
-}
+Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}."""
 
-function runAgent(){
-  var vendor=val('n_vendor'),vemail=val('n_email'),product=val('n_product');
-  var qty=val('n_qty'),delivery=val('n_delivery');
-  var quoted=val('n_quoted'),target=val('n_target'),budget=val('n_budget');
-  var payment=val('n_payment'),tone=val('n_tone');
-  var leverage=val('n_leverage'),comp=val('n_comp'),context=val('n_context');
-  var myName=val('cfg_name')||'Procurement Team',myEmail=val('cfg_email')||'procurement@company.com';
+                with st.spinner("Llama 3.3 70B crafting your negotiation email..."):
+                    try:
+                        raw = call_groq(v.cfg_api, [
+                            {"role":"system","content":SYS},
+                            {"role":"user","content":USR}
+                        ])
+                        result = parse_json(raw)
+                        if not result:
+                            result = {"subject":f"Re: {v.n_product} — Pricing Discussion",
+                                      "email":raw,"reasoning":"Direct leverage approach.",
+                                      "confidence":72,"predicted_response":"Vendor will offer partial reduction."}
+                        st.session_state.result = result
+                        st.session_state.error = None
 
-  if(!vendor||!product||!quoted||!target){
-    alert('Please fill in: Vendor Name, Product, Quoted Price, and Target Price (Steps 1 & 2).');return;
-  }
-  if(!leverage){
-    alert('Please add at least one leverage point in Step 3 — this is how the AI negotiates for you!');return;
-  }
+                        # Save deal
+                        import time
+                        deal = {
+                            "id": int(time.time()*1000),
+                            "vendor": v.n_vendor, "vendorEmail": v.n_email,
+                            "product": v.n_product, "qty": v.n_qty,
+                            "quoted": v.n_quoted, "target": v.n_target,
+                            "myName": v.cfg_name, "myEmail": v.cfg_email,
+                            "subject": result["subject"], "emailBody": result["email"],
+                            "confidence": result.get("confidence",72),
+                            "status": "sent",
+                            "timestamp": __import__('datetime').datetime.now().strftime("%d %b %Y, %H:%M"),
+                            "rounds": 0
+                        }
+                        st.session_state.deals = [deal] + (st.session_state.deals or [])
+                        st.session_state.step = 4
+                        st.rerun()
+                    except Exception as e:
+                        st.session_state.error = str(e)
+                        st.error(f"API Error: {e}")
 
-  var btn=$('sendBtn');
-  btn.disabled=true;btn.textContent='🤖 Agent Working...';
+    # ── STEP 4: TRACK ─────────────────────────────────────────────────────────
+    elif s == 4:
+        if st.button("← New Negotiation"):
+            st.session_state.step = 1
+            st.session_state.result = None
+            st.rerun()
 
-  goTab(4);
-  $('agentWrap').style.display='block';
-  $('logBox').innerHTML='';
-  $('epWrap').classList.remove('show');
+    st.markdown("</div>", unsafe_allow_html=True)
 
-  var pct=0;
-  try{var q=parseFloat(quoted.replace(/[^0-9.]/g,'')),t=parseFloat(target.replace(/[^0-9.]/g,''));if(q>0)pct=Math.round((q-t)/q*100);}catch(e){}
+# ── RIGHT PANEL ───────────────────────────────────────────────────────────────
+with right:
+    st.markdown("<div style='padding:20px 20px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 73px)'>", unsafe_allow_html=True)
 
-  [{s:'INIT',m:'NegotiatorAI agent activated for procurement deal',c:'ci'},
-   {s:'DEAL',m:'Vendor: '+vendor+' | Product: '+product+(qty?' ('+qty+')':''),c:'ci'},
-   {s:'PRICE',m:'Quoted: '+quoted+' → Target: '+target+(pct?' ('+pct+'% reduction needed)':''),c:'cw'},
-   {s:'STRAT',m:'Strategy: '+strategy+' | Tone: '+tone,c:'cd'},
-   {s:'LEVERAGE',m:(leverage.split('\n').filter(Boolean).length||1)+' leverage points loaded — full power mode',c:'cd'},
-   {s:'AI',m:'Sending to Llama 3.3 70B to craft negotiation email...',c:'cai'}
-  ].forEach(function(x,i){setTimeout(function(){L(x.s,x.m,x.c);},i*380);});
-  setTimeout(function(){showSpin('Llama 3.3 70B writing your negotiation email...');},6*380+100);
+    s = st.session_state.step
 
-  var SYS="You are an elite procurement negotiation AI agent. Write devastatingly effective negotiation emails.\nRules:\n- Use EVERY leverage point — never waste a single one\n- Be firm and authoritative, never desperate or weak\n- Make a SPECIFIC counter-offer with crystal-clear reasoning\n- Use competitor quotes as hard leverage if provided\n- Create urgency: mention a decision deadline (end of week)\n- Never reveal the maximum budget\n- Sign professionally as the buyer\nReturn ONLY valid JSON (no markdown):\n{\"subject\":\"subject\",\"email\":\"full email\",\"reasoning\":\"why this will work (2 sentences)\",\"confidence\":85,\"predicted_response\":\"vendor will likely say...\"}";
+    if s == 1:
+        # Show agent module cards
+        st.markdown("""
+        <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--mu);text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:4px'>Negotiation Modules — 5 Active</div>
+        """, unsafe_allow_html=True)
+        modules = [
+            ("mc-yellow","📝","Email Crafter","Writes devastating negotiation emails tailored to your leverage","ACTIVE"),
+            ("mc-green","🔄","Reply Handler","Reads vendor responses and auto-generates counter-offers","ACTIVE"),
+            ("mc-blue","📊","Power Analyser","Scores your negotiation strength and suggests improvements","ACTIVE"),
+            ("mc-red","⚔️","Leverage Maximiser","Extracts every advantage from your context data","ACTIVE"),
+            ("mc-orange","🏆","Deal Closer","Knows when to push harder and when to close","ACTIVE"),
+        ]
+        colors = {"mc-yellow":"var(--yellow)","mc-green":"var(--green)","mc-blue":"var(--blue)","mc-red":"var(--red)","mc-orange":"var(--orange)"}
+        for cls, ico, name, desc, status in modules:
+            c = colors[cls]
+            st.markdown(f"""
+            <div style='display:flex;align-items:center;gap:14px;padding:14px;border-bottom:1px solid var(--b1);position:relative'>
+              <div style='position:absolute;left:0;top:0;bottom:0;width:3px;background:{c};border-radius:0 2px 2px 0'></div>
+              <div style='width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.04);border:1px solid var(--b2);flex-shrink:0'>{ico}</div>
+              <div style='flex:1'>
+                <div style='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px'>{name}</div>
+                <div style='font-size:11px;color:var(--mu);font-family:"IBM Plex Mono",monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>{desc}</div>
+              </div>
+              <span style='padding:4px 10px;border-radius:3px;background:rgba(0,224,144,.15);color:var(--green);border:1px solid rgba(0,224,144,.3);font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0'>{status}</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-  var USR="Write procurement negotiation email:\nFrom: "+myName+" ("+myEmail+")\nTo: "+vendor+"\nProduct: "+product+(qty?" | Qty: "+qty:"")+"\nDelivery: "+delivery+"\nQuoted: "+quoted+"\nTarget: "+target+(budget?"\nMax budget (NEVER reveal): "+budget:"")+"\nPayment offer: "+payment+"\nTone: "+tone+"\nStrategy: "+strategy+"\nLeverage:\n"+leverage+(comp?"\nCompetitor quotes (use hard): "+comp:"")+(context?"\nContext: "+context:"")+"\n\nCraft the most powerful email to get us to "+target+". Sign as "+myName+".";
+    elif s in [2, 3]:
+        # Show deal preview / instructions
+        st.markdown("""
+        <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--mu);text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:16px'>How It Works</div>
+        """, unsafe_allow_html=True)
+        steps = [
+            ("1","Fill deal details","Enter vendor info, quoted price and your target in Step 2"),
+            ("2","Choose strategy","Pick the negotiation angle that fits your situation in Step 3"),
+            ("3","Add leverage","The more leverage points you list, the stronger your email"),
+            ("4","AI generates email","Llama 3.3 70B on Groq writes a powerful negotiation email"),
+            ("5","Handle replies","Paste vendor replies and AI auto-crafts the perfect counter"),
+        ]
+        for num, title, desc in steps:
+            st.markdown(f"""
+            <div style='display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--b1)'>
+              <div style='width:28px;height:28px;border-radius:50%;background:var(--card);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;color:var(--yellow);flex-shrink:0'>{num}</div>
+              <div>
+                <div style='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px'>{title}</div>
+                <div style='font-size:11px;color:var(--mu);font-family:"IBM Plex Mono",monospace;line-height:1.6'>{desc}</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-  groq([{role:'system',content:SYS},{role:'user',content:USR}],
-    function(text){
-      rmSpin();
-      var r=parseJ(text);
-      if(!r){r={subject:"Re: "+product+" — Pricing Discussion",email:text,reasoning:"Direct leverage approach.",confidence:72,predicted_response:"Vendor will offer partial reduction."};}
-      L('DRAFT','Email crafted — "'+r.subject+'"','cok');
-      L('WHY',r.reasoning,'cd');
-      L('CONF','Success confidence: '+r.confidence+'%','cw');
-      L('EXPECT','Predicted: '+r.predicted_response,'ci');
-      showEP(myName+' <'+myEmail+'>',vendor+' <'+(vemail||'vendor@email.com')+'>',r.subject,r.email);
-      L('SEND','Dispatching to '+vendor+'...','cai');
-      showSpin('Sending via EmailJS...');
-      sendEmail(vemail||'demo@vendor.com',r.subject,r.email,myName,myEmail,function(isDemo){
-        rmSpin();
-        L(isDemo?'DEMO':'SENT',isDemo?'📧 Demo Mode — email preview shown (add EmailJS keys to send real emails)':'📧 Email successfully sent to '+vendor+'!',isDemo?'cw':'cok');
-        L('TRACK','Deal saved to tracker below — waiting for vendor reply...','cok');
-        var deal={id:Date.now(),vendor:vendor,vendorEmail:vemail,product:product,qty:qty,quoted:quoted,target:target,myName:myName,myEmail:myEmail,subject:r.subject,emailBody:r.email,confidence:r.confidence,status:'sent',isDemo:isDemo,timestamp:new Date().toLocaleString('en-IN'),rounds:0};
-        deals.unshift(deal);renderDeals();
-        $('sm_vendor').textContent=vendor;$('sm_target').textContent=target;
-        $('sentModal').classList.add('show');
-        btn.disabled=false;btn.innerHTML='🚀 Generate &amp; Send Email';
-      });
-    },
-    function(err){rmSpin();L('ERROR',err.message,'ce');btn.disabled=false;btn.innerHTML='🚀 Generate &amp; Send Email';}
-  );
-}
+    elif s == 4:
+        result = st.session_state.get("result")
+        deals = st.session_state.get("deals", [])
 
-function handleReply(id){
-  var deal=deals.find(function(d){return d.id===id;});if(!deal)return;
-  var reply=prompt("Paste the vendor's reply email here:\n(Copy and paste their full response)");
-  if(!reply||!reply.trim())return;
-  goTab(4);$('agentWrap').style.display='block';$('logBox').innerHTML='';$('epWrap').classList.remove('show');
-  L('REPLY','Vendor reply received for: '+deal.vendor,'ci');
-  L('READ','AI analyzing their response...','cd');
-  showSpin('Reading vendor reply and crafting counter-offer...');
-  var SYS2="You are an elite procurement negotiation AI. Vendor has replied. Craft the strongest counter-response.\nRules:\n- Acknowledge them professionally\n- Identify and dismantle weak excuses\n- Push firmly toward target price\n- Use any new info as additional leverage\n- Be polite but non-negotiable on key points\nReturn ONLY valid JSON:\n{\"subject\":\"subject\",\"email\":\"full counter-email\",\"analysis\":\"what their reply reveals\",\"new_predicted_price\":\"achievable price\",\"confidence\":80,\"recommendation\":\"push more | accept | close deal\"}";
-  var USR2="Context: Vendor="+deal.vendor+" | Product="+deal.product+" | Quote="+deal.quoted+" | Target="+deal.target+"\n\nVendor's reply:\n"+reply+"\n\nWrite strongest counter-response toward "+deal.target+". Sign as "+deal.myName+".";
-  groq([{role:'system',content:SYS2},{role:'user',content:USR2}],
-    function(text){
-      rmSpin();var r=parseJ(text);
-      if(!r){r={subject:"Re: "+deal.product,email:text,analysis:"Vendor is open to negotiation.",new_predicted_price:deal.target,confidence:70,recommendation:"push more"};}
-      L('ANALYSIS',r.analysis,'cd');L('COUNTER','Counter ready — Predicted: '+r.new_predicted_price,'cok');L('ADVICE','Recommendation: '+r.recommendation,'cw');
-      showEP(deal.myName+' <'+deal.myEmail+'>',deal.vendor+' <'+(deal.vendorEmail||'vendor@email.com')+'>',r.subject,r.email);
-      showSpin('Sending counter-offer...');
-      sendEmail(deal.vendorEmail||'demo@vendor.com',r.subject,r.email,deal.myName,deal.myEmail,function(isDemo){
-        rmSpin();L(isDemo?'DEMO':'SENT',isDemo?'Counter-offer simulated (Demo Mode)':'Counter-offer sent to '+deal.vendor+'!',isDemo?'cw':'cok');
-        deal.status='negotiating';deal.predicted=r.new_predicted_price;deal.rounds=(deal.rounds||0)+1;
-        renderDeals();
-        $('rm_ico').textContent='🔄';$('rm_title').textContent='Counter-Offer Sent!';
-        $('rm_sub').textContent='AI counter-offer sent to '+deal.vendor+'. Round '+deal.rounds+' of negotiation complete.';
-        $('rm_lbl').textContent='Predicted Price';$('rm_price').textContent=r.new_predicted_price;
-        $('rm_sub2').textContent='Original quote: '+deal.quoted;
-        $('rm_info').innerHTML='<strong>Recommendation:</strong> '+r.recommendation+'. When they reply again, click Handle Reply to continue automatically.';
-        $('resultModal').classList.add('show');
-      });
-    },
-    function(err){rmSpin();L('ERROR',err.message,'ce');}
-  );
-}
+        # Show latest email result
+        if result:
+            st.markdown("""
+            <div style='display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:14px'>
+              <span style='font-size:16px;font-weight:700;color:var(--tx)'>Email Generated</span>
+              <span style='padding:5px 12px;background:rgba(0,224,144,.12);border:1px solid rgba(0,224,144,.3);border-radius:3px;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--green)'>✓ Ready</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-function closeDeal(id){
-  var deal=deals.find(function(d){return d.id===id;});if(!deal)return;
-  var final=prompt("Enter the final agreed price to lock this deal:",deal.predicted||deal.target);
-  if(!final)return;
-  deal.status='closed';deal.finalPrice=final;
-  $('rm_ico').textContent='🏆';$('rm_title').textContent='Deal Closed!';
-  $('rm_sub').textContent='Congratulations! You closed a deal with '+deal.vendor+'.';
-  $('rm_lbl').textContent='Final Price Locked';$('rm_price').textContent=final;
-  $('rm_sub2').textContent='Started: '+deal.quoted+' → Closed: '+final;
-  $('rm_info').innerHTML='<strong>🎉 Well done!</strong> Your AI agent successfully negotiated this procurement deal to the final price.';
-  $('resultModal').classList.add('show');renderDeals();
-}
+            # KPI row
+            conf = result.get("confidence", 72)
+            pct = fmt_pct(st.session_state.get("n_quoted",""), st.session_state.get("n_target",""))
+            c1, c2, c3 = st.columns(3)
+            for col, label, val, color in [
+                (c1, "Target Price", st.session_state.get("n_target","—"), "var(--green)"),
+                (c2, "Confidence", f"{conf}%", "var(--yellow)"),
+                (c3, "Reduction", pct or "—", "var(--blue)"),
+            ]:
+                with col:
+                    st.markdown(f"""
+                    <div style='background:var(--sf);border:1px solid var(--b1);border-radius:8px;padding:14px;margin-bottom:12px'>
+                      <div style='font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:6px'>{label}</div>
+                      <div style='font-size:22px;font-weight:700;color:{color};font-family:"IBM Plex Mono",monospace;letter-spacing:-0.5px;line-height:1'>{val}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-function viewEmail(id){
-  var deal=deals.find(function(d){return d.id===id;});if(!deal)return;
-  goTab(4);$('agentWrap').style.display='block';
-  showEP(deal.myName+' <'+deal.myEmail+'>',deal.vendor+' <'+(deal.vendorEmail||'vendor@email.com')+'>',deal.subject,deal.emailBody);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+            # Reasoning
+            st.markdown(f"""
+            <div class="result-card rc-yellow">
+              <div class="rc-header" style="color:var(--yellow)">Why This Will Work</div>
+              <div class="rc-content">{result.get("reasoning","")}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-function renderDeals(){
-  var el=$('dealTracker');
-  if(!deals.length){
-    el.innerHTML='<div class="empty-state"><div class="ei">📁</div><h3>No deals yet</h3><p>Complete the form and send your first negotiation email to see deals here.</p></div>';return;
-  }
-  var html='<div class="deals-stack">';
-  deals.forEach(function(d){
-    var ico='📤',stTag='';
-    if(d.status==='sent'){ico='📤';stTag='<span class="dc dc-sent">Email Sent</span>';}
-    if(d.status==='negotiating'){ico='🔄';stTag='<span class="dc dc-neg">Negotiating · Round '+d.rounds+'</span>';}
-    if(d.status==='closed'){ico='🏆';stTag='<span class="dc dc-done">Deal Closed</span>';}
-    var demoTag=d.isDemo?'<span class="dc dc-demo">Demo Mode</span>':'';
-    var display=d.finalPrice||d.predicted||d.target;
-    var qn=parseFloat((d.quoted||'').replace(/[^0-9.]/g,''))||0;
-    var fn=parseFloat((display||'').replace(/[^0-9.]/g,''))||0;
-    var sp=qn>0&&fn>0?Math.round((qn-fn)/qn*100):0;
-    html+='<div class="deal">'
-      +'<div class="deal-top">'
-      +'<div class="deal-ico">'+ico+'</div>'
-      +'<div class="deal-info">'
-      +'<div class="deal-vendor">'+d.vendor+'</div>'
-      +'<div class="deal-product">'+d.product+(d.qty?' &mdash; '+d.qty:'')+'</div>'
-      +'<div class="deal-subject">'+d.subject+'</div>'
-      +'<div class="deal-chips">'+stTag+demoTag+'</div>'
-      +'</div>'
-      +'<div class="deal-prices">'
-      +'<div class="dp-orig">'+d.quoted+'</div>'
-      +'<div class="dp-current">'+display+'</div>'
-      +(sp>0?'<div class="dp-save">↓ '+sp+'% off</div>':'')
-      +'</div>'
-      +'</div>'
-      +'<div class="deal-bar">';
-    if(d.status!=='closed'){
-      html+='<button class="da da-gold" onclick="handleReply('+d.id+')"><span>🔄</span> Handle Reply</button>';
-      html+='<button class="da da-em" onclick="closeDeal('+d.id+')"><span>✅</span> Close Deal</button>';
-    }
-    html+='<button class="da da-sap" onclick="viewEmail('+d.id+')"><span>👁</span> View Email</button>';
-    html+='<span class="deal-time">'+d.timestamp+'</span>';
-    html+='</div></div>';
-  });
-  html+='</div>';el.innerHTML=html;
-}
+            # Predicted response
+            st.markdown(f"""
+            <div class="result-card rc-blue">
+              <div class="rc-header" style="color:var(--blue)">Predicted Vendor Response</div>
+              <div class="rc-content">{result.get("predicted_response","")}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-function closeSent(){$('sentModal').classList.remove('show');}
-function closeResult(){$('resultModal').classList.remove('show');renderDeals();}
-</script>
-</body>
-</html>"""
+            # Email preview
+            v = st.session_state
+            st.markdown(f"""
+            <div class="email-preview">
+              <div class="ep-header">
+                <div class="ep-row"><span class="ep-k">FROM</span><span class="ep-v">{v.get("cfg_name","")} &lt;{v.get("cfg_email","")}&gt;</span></div>
+                <div class="ep-row"><span class="ep-k">TO</span><span class="ep-v">{v.get("n_vendor","")} &lt;{v.get("n_email","")}&gt;</span></div>
+                <div class="ep-row"><span class="ep-k">SUBJECT</span><span class="ep-v">{result.get("subject","")}</span></div>
+              </div>
+              <div class="ep-body">{result.get("email","").replace("<","&lt;").replace(">","&gt;")}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-# =========================
-# STREAMLIT UI WRAPPER
-# =========================
-st.markdown(
-    """
-    <style>
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 0rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+            st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-st.title("🤝 Negotiator AI")
+        # ── DEAL TRACKER ──────────────────────────────────────────────────────
+        st.markdown("""<div class="srule"><div class="srule-title">Deal Tracker</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
 
-# Render full HTML UI
-st.components.v1.html(PAGE, height=900, scrolling=True)
+        if not deals:
+            st.markdown("""
+            <div class="empty-state">
+              <div class="ei">📁</div>
+              <h3>No deals yet</h3>
+              <p>Complete the form to see deals here</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            for deal in deals:
+                status = deal.get("status","sent")
+                ico = "📤" if status=="sent" else "🔄" if status=="negotiating" else "🏆"
+                badge_cls = "dc-sent" if status=="sent" else "dc-neg" if status=="negotiating" else "dc-done"
+                badge_label = "Email Sent" if status=="sent" else f"Negotiating · Round {deal.get('rounds',0)}" if status=="negotiating" else "Deal Closed"
+                display_price = deal.get("finalPrice") or deal.get("predicted") or deal.get("target","")
+                pct_str = fmt_pct(deal.get("quoted",""), display_price)
+
+                st.markdown(f"""
+                <div class="deal-card">
+                  <div class="deal-top">
+                    <div class="deal-ico">{ico}</div>
+                    <div class="deal-info">
+                      <div class="deal-vendor">{deal['vendor']}</div>
+                      <div class="deal-product">{deal['product']}{f" — {deal['qty']}" if deal.get('qty') else ""}</div>
+                      <div class="deal-subject">{deal.get('subject','')}</div>
+                      <div class="deal-chips"><span class="dc {badge_cls}">{badge_label}</span></div>
+                    </div>
+                    <div class="deal-prices">
+                      <div class="dp-orig">{deal['quoted']}</div>
+                      <div class="dp-current">{display_price}</div>
+                      {f'<div class="dp-save">↓ {pct_str} off</div>' if pct_str else ''}
+                    </div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Handle Reply
+                if status != "closed":
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        if st.button(f"🔄 Handle Reply", key=f"reply_{deal['id']}"):
+                            st.session_state.handle_reply_id = deal["id"]
+                            st.rerun()
+                    with col_b:
+                        if st.button(f"✅ Close Deal", key=f"close_{deal['id']}"):
+                            deal["status"] = "closed"
+                            deal["finalPrice"] = deal.get("predicted") or deal["target"]
+                            st.rerun()
+
+            # Handle reply flow
+            if st.session_state.handle_reply_id:
+                deal_id = st.session_state.handle_reply_id
+                deal = next((d for d in deals if d["id"] == deal_id), None)
+                if deal:
+                    st.markdown(f"""<div style='background:rgba(77,158,247,0.06);border:1px solid rgba(77,158,247,0.2);border-radius:8px;padding:14px;margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--blue)'>
+                    Paste vendor reply for <strong style='color:var(--tx)'>{deal['vendor']}</strong> below:</div>""", unsafe_allow_html=True)
+
+                    with st.form(f"reply_form_{deal_id}"):
+                        vendor_reply = st.text_area("Vendor's Reply Email", placeholder="Paste their full response here...", height=120)
+                        c1r, c2r = st.columns(2)
+                        with c1r: cancel_reply = st.form_submit_button("Cancel")
+                        with c2r: send_reply = st.form_submit_button("🤖 Generate Counter-Offer")
+
+                    if cancel_reply:
+                        st.session_state.handle_reply_id = None
+                        st.rerun()
+
+                    if send_reply:
+                        if not vendor_reply.strip():
+                            st.error("Please paste the vendor's reply.")
+                        else:
+                            SYS2 = """You are an elite procurement negotiation AI. Vendor has replied. Craft the strongest counter-response.
+Rules:
+- Acknowledge them professionally
+- Identify and dismantle weak excuses
+- Push firmly toward target price
+- Use any new info as additional leverage
+Return ONLY valid JSON:
+{"subject":"subject","email":"full counter-email","analysis":"what their reply reveals","new_predicted_price":"achievable price","confidence":80,"recommendation":"push more | accept | close deal"}"""
+                            USR2 = f"""Context: Vendor={deal['vendor']} | Product={deal['product']} | Quote={deal['quoted']} | Target={deal['target']}
+
+Vendor's reply:
+{vendor_reply}
+
+Write strongest counter-response toward {deal['target']}. Sign as {deal['myName']}."""
+                            with st.spinner("AI reading reply and crafting counter-offer..."):
+                                try:
+                                    raw = call_groq(st.session_state.cfg_api, [
+                                        {"role":"system","content":SYS2},
+                                        {"role":"user","content":USR2}
+                                    ])
+                                    r = parse_json(raw)
+                                    if not r:
+                                        r = {"subject":f"Re: {deal['product']}","email":raw,
+                                             "analysis":"Vendor is open to negotiation.",
+                                             "new_predicted_price":deal["target"],
+                                             "confidence":70,"recommendation":"push more"}
+
+                                    deal["status"] = "negotiating"
+                                    deal["predicted"] = r.get("new_predicted_price", deal["target"])
+                                    deal["rounds"] = deal.get("rounds",0) + 1
+                                    st.session_state.handle_reply_id = None
+                                    st.session_state.result = {
+                                        "subject": r["subject"],
+                                        "email": r["email"],
+                                        "reasoning": r.get("analysis",""),
+                                        "confidence": r.get("confidence",72),
+                                        "predicted_response": f"Recommendation: {r.get('recommendation','')} — Predicted: {r.get('new_predicted_price','')}"
+                                    }
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"API Error: {e}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
