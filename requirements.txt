@@ -4,3 +4,4 @@ numpy
 openai
 groq
 scikit-learn
+plotly
