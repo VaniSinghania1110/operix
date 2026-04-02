@@ -1,11 +1,15 @@
 import streamlit as st
 import requests
 import json
+import os
 
 st.set_page_config(layout="wide", page_title="NegotiatorAI")
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.3-70b-versatile"
+
+# ── Read API key from environment ────────────────────────────────────────────
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # ── Session state init ────────────────────────────────────────────────────────
 for k in ["step","result","deals","handle_reply_id","handle_reply_result","error"]:
@@ -16,10 +20,10 @@ if "deals" not in st.session_state or st.session_state.deals is None:
 if "step" not in st.session_state or st.session_state.step is None:
     st.session_state.step = 1
 
-def call_groq(api_key, messages):
+def call_groq(messages):
     resp = requests.post(
         GROQ_URL,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {GROQ_API_KEY}"},
         json={"model": MODEL, "temperature": 0.65, "max_tokens": 1800, "messages": messages},
         timeout=60
     )
@@ -49,8 +53,7 @@ def fmt_pct(quoted, target):
     except: pass
     return ""
 
-# ── Global CSS — Operix-style ─────────────────────────────────────────────────
-# ── Clean Global CSS ─────────────────────────────────────────────────────────
+# ── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 :root {
@@ -87,79 +90,265 @@ footer,
   max-width: 100% !important;
 }
 
+/* ── Navbar ── */
 .on-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 36px;
+  padding: 14px 32px;
   border-bottom: 1px solid var(--b1);
   background: var(--bg);
 }
-
-.on-logo-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+.on-logo-wrap { display: flex; align-items: center; gap: 12px; }
 .on-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 36px; height: 36px; border-radius: 10px;
   background: linear-gradient(135deg,#4f9cf9,#a855f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
 }
-
-.on-brand {
-  font-size: 20px;
-  font-weight: 700;
-}
-
+.on-brand { font-size: 18px; font-weight: 700; }
 .on-badge {
-  padding: 4px 12px;
-  border: 1px solid var(--b2);
-  border-radius: 20px;
-  font-size: 10px;
-  color: var(--mu);
+  padding: 3px 10px; border: 1px solid var(--b2); border-radius: 20px;
+  font-size: 9px; color: var(--mu); font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Courier New', monospace;
 }
 
-.kpi-card,
-.result-card,
-.deal-card {
-  background: var(--sf);
-  border: 1px solid var(--b1);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.hero-h1 {
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
+/* ── Hero ── */
 .hero-label {
-  font-size: 10px;
-  color: var(--mu);
-  margin-bottom: 10px;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 10px;
+  font-family: 'Courier New', monospace;
+}
+.hero-h1 { font-size: 36px; font-weight: 700; line-height: 1.1; margin-bottom: 14px; }
+.c-white { color: var(--tx); }
+.c-blue { color: var(--blue); }
+.c-green { color: var(--green); }
+.feat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.feat-tag {
+  border: 1px solid var(--b2); padding: 3px 8px; border-radius: 4px;
+  font-size: 10px; color: var(--mu); display: inline-block;
 }
 
-.feat-tag {
-  border: 1px solid var(--b2);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  color: var(--mu);
-  display: inline-block;
-  margin-right: 5px;
+/* ── Step bar ── */
+.steps-bar {
+  display: flex; gap: 6px; margin-bottom: 20px;
 }
+.step-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; padding: 10px 4px 8px; border-radius: 8px;
+  border: 1px solid var(--b1); background: var(--sf);
+}
+.step-tab.active { border-color: var(--blue); background: rgba(79,156,249,0.06); }
+.step-tab.done  { border-color: rgba(0,224,150,0.3); background: rgba(0,224,150,0.04); }
+.st-num {
+  font-size: 9px; font-weight: 700; color: var(--mu);
+  font-family: 'Courier New', monospace; letter-spacing: 1px;
+}
+.step-tab.active .st-num { color: var(--blue); }
+.step-tab.done  .st-num  { color: var(--green); }
+.st-ico  { font-size: 14px; }
+.st-label {
+  font-size: 9px; font-weight: 600; color: var(--mu);
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.step-tab.active .st-label { color: var(--blue); }
+.step-tab.done  .st-label  { color: var(--green); }
+
+/* ── Section rule ── */
+.srule { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.srule-title {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mu); white-space: nowrap;
+  font-family: 'Courier New', monospace;
+}
+.srule-line { flex: 1; height: 1px; background: var(--b1); }
+
+/* ── Tip box ── */
+.tip-box {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(79,156,249,0.06); border: 1px solid rgba(79,156,249,0.18);
+  border-radius: 8px; padding: 12px 14px; font-size: 12px;
+  color: var(--mu); line-height: 1.6; margin-bottom: 16px;
+}
+
+/* ── Cards ── */
+.kpi-card, .result-card, .deal-card {
+  background: var(--sf); border: 1px solid var(--b1);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.kpi-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--mu);
+  font-family: 'Courier New', monospace; margin-bottom: 6px;
+}
+.kpi-val {
+  font-size: 20px; font-weight: 700;
+  font-family: 'Courier New', monospace; letter-spacing: -1px;
+}
+
+/* ── Result cards ── */
+.result-card.rc-yellow { background: rgba(245,197,66,0.06); border: 1px solid rgba(245,197,66,0.2); }
+.result-card.rc-blue   { background: rgba(79,156,249,0.06);  border: 1px solid rgba(79,156,249,0.2); }
+.rc-header {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; font-family: 'Courier New', monospace; margin-bottom: 6px;
+}
+.rc-content { font-size: 12px; color: var(--tx); line-height: 1.7; }
+
+/* ── Email preview ── */
+.email-preview {
+  background: var(--sf); border: 1px solid var(--b1);
+  border-radius: 10px; overflow: hidden; margin-bottom: 14px;
+}
+.ep-header {
+  border-bottom: 1px solid var(--b1); padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ep-row { display: flex; align-items: baseline; gap: 10px; font-size: 11px; }
+.ep-k {
+  font-family: 'Courier New', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--mu); min-width: 60px;
+}
+.ep-v { color: var(--tx); flex: 1; word-break: break-word; }
+.ep-body {
+  padding: 16px; font-size: 12px; line-height: 1.8;
+  color: var(--tx); white-space: pre-wrap; word-break: break-word;
+}
+
+/* ── Power meter ── */
+.power-track {
+  height: 4px; background: var(--b2); border-radius: 2px; overflow: hidden; margin-top: 4px;
+}
+.power-fill { height: 100%; border-radius: 2px; }
+
+/* ── Agent cards ── */
+.agent-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  border: 1px solid var(--b1); background: var(--sf);
+  margin-bottom: 8px; position: relative; overflow: hidden;
+}
+.agent-ico {
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid var(--b2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; background: var(--card);
+}
+.agent-info { flex: 1; min-width: 0; }
+.agent-name { font-size: 13px; font-weight: 600; color: var(--tx); }
+.agent-desc { font-size: 10px; color: var(--mu); margin-top: 2px; line-height: 1.4; }
+.agent-badge {
+  font-size: 8px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+  flex-shrink: 0;
+}
+.badge-active {
+  background: rgba(0,224,150,0.12);
+  border: 1px solid rgba(0,224,150,0.3);
+  color: var(--green);
+}
+
+/* ── Strategy items ── */
+.strat-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--b1); background: var(--sf);
+  margin-bottom: 6px; cursor: pointer;
+}
+.strat-item.selected { border-color: var(--blue); background: rgba(79,156,249,0.06); }
+
+/* ── Deal card ── */
+.deal-card { position: relative; padding-left: 18px; }
+.deal-top { display: flex; align-items: flex-start; gap: 10px; }
+.deal-vendor { font-size: 13px; font-weight: 700; color: var(--tx); margin-bottom: 2px; }
+.deal-product { font-size: 11px; color: var(--mu); }
+.deal-prices { text-align: right; margin-left: auto; }
+.dp-orig { font-size: 10px; color: var(--mu); text-decoration: line-through; }
+.dp-current { font-size: 14px; font-weight: 700; color: var(--green); font-family: 'Courier New', monospace; }
+.dp-save { font-size: 10px; color: var(--yellow); }
+.dc { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 4px;
+      font-family: 'Courier New', monospace; margin-top: 6px; }
+.dc-sent { background: rgba(79,156,249,0.12); border: 1px solid rgba(79,156,249,0.3); color: var(--blue); }
+.dc-neg  { background: rgba(245,197,66,0.12); border: 1px solid rgba(245,197,66,0.3); color: var(--yellow); }
+.dc-done { background: rgba(0,224,150,0.12);  border: 1px solid rgba(0,224,150,0.3);  color: var(--green); }
+
+/* ── Stat strip ── */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  border: 1px solid var(--b1); border-radius: 10px;
+  overflow: hidden; margin-top: 20px;
+}
+.stat-cell { padding: 18px; text-align: center; }
+.stat-val { font-size: 28px; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: -2px; }
+.stat-lbl {
+  font-size: 9px; color: var(--mu); font-family: 'Courier New', monospace;
+  letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;
+}
+
+/* ── How-it-works steps ── */
+.how-step {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--b1); position: relative;
+}
+.how-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--card); display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700;
+  font-family: 'Courier New', monospace; flex-shrink: 0;
+}
+.how-title { font-size: 13px; font-weight: 600; color: var(--tx); margin-bottom: 3px; }
+.how-desc  { font-size: 11px; color: var(--mu); font-family: 'Courier New', monospace; line-height: 1.6; }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 36px 20px; color: var(--mu); }
+.empty-state .ei { font-size: 32px; margin-bottom: 10px; }
+.empty-state h3 { font-size: 15px; color: var(--tx); margin: 0 0 6px; }
+.empty-state p  { font-size: 12px; margin: 0; }
+
+/* ── Ready badge ── */
+.ready-badge {
+  padding: 5px 12px; background: rgba(0,224,150,0.12);
+  border: 1px solid rgba(0,224,150,0.3); border-radius: 4px;
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--green); font-family: 'Courier New', monospace;
+}
+
+/* ── Streamlit widget overrides ── */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+  background: var(--card) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 8px !important;
+  color: var(--tx) !important;
+  font-size: 13px !important;
+}
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+  border-color: var(--blue) !important;
+  box-shadow: none !important;
+}
+label { color: var(--mu) !important; font-size: 11px !important; font-weight: 600 !important; }
+.stButton > button {
+  background: var(--blue) !important; color: #fff !important;
+  border: none !important; border-radius: 8px !important;
+  font-weight: 600 !important; width: 100% !important;
+}
+.stButton > button[kind="secondary"] {
+  background: transparent !important; color: var(--mu) !important;
+  border: 1px solid var(--b2) !important;
+}
+.stRadio > div { gap: 6px !important; }
+.stRadio > div > label {
+  background: var(--sf) !important; border: 1px solid var(--b1) !important;
+  border-radius: 8px !important; padding: 10px 12px !important;
+  cursor: pointer !important; width: 100% !important;
+}
+.stAlert { border-radius: 8px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Top Navbar ───────────────────────────────────────────────────────────────
+# ── Top Navbar ────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="on-nav">
   <div class="on-logo-wrap">
@@ -167,7 +356,7 @@ st.markdown("""
     <div class="on-brand">Negotiator<span style="color:#4f9cf9">AI</span></div>
     <div class="on-badge">AI PROCUREMENT AGENT</div>
   </div>
-  <div style="font-size:11px;color:#5a6480">
+  <div style="font-size:11px;color:#5a6480;font-family:'Courier New',monospace">
     Groq · LLaMA 3.3 70B · 4-Step Wizard
   </div>
 </div>
@@ -179,7 +368,7 @@ left, right = st.columns([1.1, 2])
 with left:
     st.markdown("<div style='padding:24px 16px 0'>", unsafe_allow_html=True)
 
-    # Hero — Operix style
+    # Hero
     st.markdown("""
     <div style='margin-bottom:18px'>
       <div class="hero-label">AI-Powered Procurement Negotiation</div>
@@ -189,7 +378,7 @@ with left:
         <span class="c-green">Save More.</span>
       </div>
       <p style='font-size:13px;color:var(--mu);line-height:1.75;margin-bottom:12px'>
-        NegotiatorAI detects the best leverage, crafts killer emails, and handles vendor replies automatically — until you close at your target price.
+        NegotiatorAI detects the best leverage, crafts killer emails, and handles vendor replies automatically.
       </p>
       <div class="feat-tags">
         <span class="feat-tag">Email Crafter</span>
@@ -201,7 +390,7 @@ with left:
     </div>
     """, unsafe_allow_html=True)
 
-    # Step tabs
+    # Step bar
     s = st.session_state.step
     def tab_cls(n):
         if n == s: return "active"
@@ -211,37 +400,39 @@ with left:
     st.markdown(f"""
     <div class="steps-bar">
       <div class="step-tab {tab_cls(1)}">
-        <span class="st-num">01</span>
-        <span class="st-ico">🔧</span>
-        <span class="st-label">Setup</span>
+        <span class="st-num">01</span><span class="st-ico">🔧</span><span class="st-label">Setup</span>
       </div>
       <div class="step-tab {tab_cls(2)}">
-        <span class="st-num">02</span>
-        <span class="st-ico">📋</span>
-        <span class="st-label">Deal Info</span>
+        <span class="st-num">02</span><span class="st-ico">📋</span><span class="st-label">Deal Info</span>
       </div>
       <div class="step-tab {tab_cls(3)}">
-        <span class="st-num">03</span>
-        <span class="st-ico">⚔️</span>
-        <span class="st-label">Strategy</span>
+        <span class="st-num">03</span><span class="st-ico">⚔️</span><span class="st-label">Strategy</span>
       </div>
       <div class="step-tab {tab_cls(4)}">
-        <span class="st-num">04</span>
-        <span class="st-ico">🚀</span>
-        <span class="st-label">Track</span>
+        <span class="st-num">04</span><span class="st-ico">🚀</span><span class="st-label">Track</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── STEP 1: SETUP ─────────────────────────────────────────────────────────
     if s == 1:
-        st.markdown("""
+        api_ready = bool(GROQ_API_KEY)
+        tip_color = "rgba(0,224,150,0.06)" if api_ready else "rgba(79,156,249,0.06)"
+        tip_border = "rgba(0,224,150,0.25)" if api_ready else "rgba(79,156,249,0.18)"
+        tip_icon = "✅" if api_ready else "💡"
+        tip_text = (
+            "<strong style='color:var(--green)'>Groq API key loaded</strong> — the AI engine is ready."
+            if api_ready else
+            "<strong style='color:var(--red)'>Missing:</strong> Set GROQ_API_KEY in your environment."
+        )
+        st.markdown(f"""
         <div class="srule"><div class="srule-title">Configuration</div><div class="srule-line"></div></div>
-        <div class="tip-box">💡 &nbsp;<span><strong style='color:var(--blue)'>Required:</strong> Add your Groq API key to generate negotiation emails. Get one free at console.groq.com</span></div>
+        <div class="tip-box" style="background:{tip_color};border-color:{tip_border}">
+          {tip_icon}&nbsp;<span>{tip_text}</span>
+        </div>
         """, unsafe_allow_html=True)
+
         with st.form("form_step1"):
-            api_key = st.text_input("Groq API Key ✱", placeholder="gsk_...", type="password",
-                                    value=st.session_state.get("cfg_api",""))
             c1, c2 = st.columns(2)
             with c1:
                 name = st.text_input("Your Name / Company ✱", placeholder="Rahul Sharma / TechCorp",
@@ -249,14 +440,11 @@ with left:
             with c2:
                 email = st.text_input("Your Email ✱", placeholder="procurement@company.com",
                                       value=st.session_state.get("cfg_email","procurement@company.com"))
-            go1 = st.form_submit_button("→  Continue to Deal Details")
+            go1 = st.form_submit_button("→  Continue to Deal Details", disabled=not api_ready)
         if go1:
-            if not api_key.strip():
-                st.error("Groq API key is required.")
-            elif not name.strip() or not email.strip():
+            if not name.strip() or not email.strip():
                 st.error("Name and email are required.")
             else:
-                st.session_state.cfg_api = api_key.strip()
                 st.session_state.cfg_name = name.strip()
                 st.session_state.cfg_email = email.strip()
                 st.session_state.step = 2
@@ -267,24 +455,17 @@ with left:
         st.markdown("""<div class="srule"><div class="srule-title">Procurement Information</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
         with st.form("form_step2"):
             c1, c2 = st.columns(2)
-            with c1: vendor = st.text_input("Vendor / Supplier ✱", placeholder="Samsung India, Infosys...",
-                                             value=st.session_state.get("n_vendor",""))
-            with c2: vemail = st.text_input("Vendor Email ✱", placeholder="sales@vendor.com",
-                                             value=st.session_state.get("n_email",""))
+            with c1: vendor = st.text_input("Vendor / Supplier ✱", placeholder="Samsung India, Infosys...", value=st.session_state.get("n_vendor",""))
+            with c2: vemail = st.text_input("Vendor Email", placeholder="sales@vendor.com", value=st.session_state.get("n_email",""))
             c1, c2, c3 = st.columns(3)
-            with c1: product = st.text_input("Product / Service ✱", placeholder="Laptops, Raw Materials...",
-                                              value=st.session_state.get("n_product",""))
-            with c2: qty = st.text_input("Quantity", placeholder="50 units, 500 kg...",
-                                          value=st.session_state.get("n_qty",""))
+            with c1: product = st.text_input("Product / Service ✱", placeholder="Laptops, Raw Materials...", value=st.session_state.get("n_product",""))
+            with c2: qty = st.text_input("Quantity", placeholder="50 units, 500 kg...", value=st.session_state.get("n_qty",""))
             with c3: delivery = st.selectbox("Delivery Needed",
                 ["Immediately / ASAP","Within 2 weeks","Within 1 month","Within 3 months","Flexible"], index=2)
             c1, c2, c3 = st.columns(3)
-            with c1: quoted = st.text_input("Vendor's Quoted Price ✱", placeholder="₹5,00,000",
-                                             value=st.session_state.get("n_quoted",""))
-            with c2: target = st.text_input("Your Target Price ✱", placeholder="₹3,50,000",
-                                             value=st.session_state.get("n_target",""))
-            with c3: budget = st.text_input("Max Budget (private)", placeholder="₹4,00,000",
-                                             value=st.session_state.get("n_budget",""))
+            with c1: quoted = st.text_input("Vendor's Quoted Price ✱", placeholder="₹5,00,000", value=st.session_state.get("n_quoted",""))
+            with c2: target = st.text_input("Your Target Price ✱", placeholder="₹3,50,000", value=st.session_state.get("n_target",""))
+            with c3: budget = st.text_input("Max Budget (private)", placeholder="₹4,00,000", value=st.session_state.get("n_budget",""))
             c1, c2 = st.columns(2)
             with c1: payment = st.selectbox("Payment Terms",
                 ["100% upfront — best leverage","50/50 split","Net 30 days","Net 60 days","Milestone-based"])
@@ -318,19 +499,21 @@ with left:
             ("🎁","Bundle Deal","Package multiple items","bundle multiple products for total deal"),
         ]
         saved_strat = st.session_state.get("n_strategy","bulk volume discount")
-        strat_names = [f"{s[0]} {s[1]}" for s in strats]
+        strat_names  = [f"{s[0]} {s[1]}" for s in strats]
         strat_values = [s[3] for s in strats]
 
-        st.markdown("""<div style='font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:10px'>Primary Strategy</div>""", unsafe_allow_html=True)
+        st.markdown("""<div style='font-family:"Courier New",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:10px'>Primary Strategy</div>""", unsafe_allow_html=True)
         strat_choice = st.radio("", strat_names, horizontal=False,
-                                 index=strat_values.index(saved_strat) if saved_strat in strat_values else 0,
-                                 label_visibility="collapsed")
+                                index=strat_values.index(saved_strat) if saved_strat in strat_values else 0,
+                                label_visibility="collapsed")
         chosen_strat = strat_values[strat_names.index(strat_choice)]
+
+        st.markdown("""<div class="srule" style="margin-top:16px"><div class="srule-title">Leverage & Context</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
 
         with st.form("form_step3"):
             leverage = st.text_area("Your Leverage Points ✱",
                 placeholder="List everything:\n• Buying in bulk (50 units)\n• Can pay 100% upfront today\n• Loyal customer 3 years\n• Comparing 3 quotes right now",
-                height=120, value=st.session_state.get("n_leverage",""))
+                height=110, value=st.session_state.get("n_leverage",""))
             comp = st.text_input("Competitor Quotes (very powerful)",
                 placeholder="e.g. Competitor A quoted ₹3,80,000 · Vendor B at ₹4,00,000",
                 value=st.session_state.get("n_comp",""))
@@ -338,7 +521,6 @@ with left:
                 placeholder="Past relationship, previous orders, urgency...",
                 height=68, value=st.session_state.get("n_context",""))
 
-            # Power meter
             power = 0
             for fk in ["n_vendor","n_email","n_product","n_quoted","n_target"]:
                 if st.session_state.get(fk,""): power += 10
@@ -352,10 +534,10 @@ with left:
             st.markdown(f"""
             <div style='margin-bottom:8px'>
               <div style='display:flex;justify-content:space-between;margin-bottom:6px'>
-                <span style='font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu)'>Negotiation Power</span>
-                <span style='font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:{pcolor}'>{power}% {plabel}</span>
+                <span style='font-family:"Courier New",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu)'>Negotiation Power</span>
+                <span style='font-family:"Courier New",monospace;font-size:12px;font-weight:700;color:{pcolor}'>{power}% {plabel}</span>
               </div>
-              <div class="power-track"><div class="power-fill" style="width:{power}%"></div></div>
+              <div class="power-track"><div class="power-fill" style="width:{power}%;background:{pcolor}"></div></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -404,7 +586,7 @@ Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}.""
 
                 with st.spinner("LLaMA 3.3 70B crafting your negotiation email..."):
                     try:
-                        raw = call_groq(v.cfg_api, [
+                        raw = call_groq([
                             {"role":"system","content":SYS},
                             {"role":"user","content":USR}
                         ])
@@ -447,31 +629,30 @@ Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}.""
 
 # ── RIGHT PANEL ───────────────────────────────────────────────────────────────
 with right:
-    st.markdown("<div style='padding:24px 20px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 69px)'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:24px 24px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 64px)'>", unsafe_allow_html=True)
 
     s = st.session_state.step
 
+    # ── Step 1 right panel: Agent cards ───────────────────────────────────────
     if s == 1:
-        # Operix-style agent cards
         st.markdown("""
-        <div style='font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:600;letter-spacing:3px;
+        <div style='font-family:"Courier New",monospace;font-size:10px;font-weight:600;letter-spacing:3px;
         color:var(--mu);text-transform:uppercase;padding-bottom:14px;
-        border-bottom:1px solid var(--b1);margin-bottom:4px'>
+        border-bottom:1px solid var(--b1);margin-bottom:16px'>
           Negotiation Agents — 5 Active
         </div>
         """, unsafe_allow_html=True)
 
         agents = [
-            ("#4f9cf9", "📝", "Email Crafter",    "Writes devastating negotiation emails tailored to your leverage"),
-            ("#00e096", "🔄", "Reply Handler",     "Reads vendor responses and auto-generates counter-offers"),
-            ("#f5c542", "📊", "Power Analyser",    "Scores your negotiation strength and suggests improvements"),
-            ("#ff4f5e", "⚔️", "Leverage Maximiser","Extracts every advantage from your context data"),
-            ("#a855f7", "🏆", "Deal Closer",       "Knows when to push harder and when to close"),
+            ("#4f9cf9","📝","Email Crafter",    "Writes devastating negotiation emails tailored to your leverage"),
+            ("#00e096","🔄","Reply Handler",     "Reads vendor responses and auto-generates counter-offers"),
+            ("#f5c542","📊","Power Analyser",    "Scores your negotiation strength and suggests improvements"),
+            ("#ff4f5e","⚔️","Leverage Maximiser","Extracts every advantage from your context data"),
+            ("#a855f7","🏆","Deal Closer",       "Knows when to push harder and when to close"),
         ]
         for color, ico, name, desc in agents:
             st.markdown(f"""
-            <div class="agent-card" style="--ac:{color}">
-              <style>.agent-card[style*="{color}"]::before{{background:{color}}}</style>
+            <div class="agent-card" style="border-left:3px solid {color}">
               <div class="agent-ico" style="border-color:{color}33">{ico}</div>
               <div class="agent-info">
                 <div class="agent-name">{name}</div>
@@ -481,28 +662,28 @@ with right:
             </div>
             """, unsafe_allow_html=True)
 
-        # Bottom stat strip (Operix style)
         st.markdown("""
-        <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:0;
-        border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-top:20px'>
-          <div style='padding:18px;border-right:1px solid var(--b1);text-align:center'>
-            <div style='font-size:32px;font-weight:700;color:var(--blue);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>5</div>
-            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Agents</div>
+        <div class="stat-strip" style="display:grid;grid-template-columns:repeat(3,1fr);
+        border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-top:20px">
+          <div class="stat-cell" style="padding:18px;border-right:1px solid var(--b1);text-align:center">
+            <div class="stat-val" style="color:var(--blue)">5</div>
+            <div class="stat-lbl">Agents</div>
           </div>
-          <div style='padding:18px;border-right:1px solid var(--b1);text-align:center'>
-            <div style='font-size:32px;font-weight:700;color:var(--green);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>AI</div>
-            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Powered</div>
+          <div class="stat-cell" style="padding:18px;border-right:1px solid var(--b1);text-align:center">
+            <div class="stat-val" style="color:var(--green)">AI</div>
+            <div class="stat-lbl">Powered</div>
           </div>
-          <div style='padding:18px;text-align:center'>
-            <div style='font-size:32px;font-weight:700;color:var(--yellow);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>4s</div>
-            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Avg Speed</div>
+          <div class="stat-cell" style="padding:18px;text-align:center">
+            <div class="stat-val" style="color:var(--yellow)">4s</div>
+            <div class="stat-lbl">Avg Speed</div>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
+    # ── Steps 2 & 3 right panel: How It Works ─────────────────────────────────
     elif s in [2, 3]:
         st.markdown("""
-        <div style='font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:600;
+        <div style='font-family:"Courier New",monospace;font-size:10px;font-weight:600;
         letter-spacing:3px;color:var(--mu);text-transform:uppercase;
         padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:16px'>
           How It Works
@@ -518,40 +699,31 @@ with right:
         ]
         for color, num, title, desc in steps_info:
             st.markdown(f"""
-            <div style='display:flex;align-items:flex-start;gap:12px;padding:14px 0;
-            border-bottom:1px solid var(--b1);position:relative'>
-              <div style='position:absolute;left:0;top:0;bottom:0;width:3px;
-              background:{color};border-radius:0 2px 2px 0'></div>
-              <div style='margin-left:12px;width:28px;height:28px;border-radius:50%;
-              background:var(--card);border:1px solid {color}44;
-              display:flex;align-items:center;justify-content:center;
-              font-family:"JetBrains Mono",monospace;font-size:11px;
-              font-weight:700;color:{color};flex-shrink:0'>{num}</div>
+            <div class="how-step" style="border-left:3px solid {color};padding-left:12px">
+              <div class="how-num" style="border:1px solid {color}44;color:{color}">{num}</div>
               <div>
-                <div style='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px'>{title}</div>
-                <div style='font-size:11px;color:var(--mu);font-family:"JetBrains Mono",monospace;line-height:1.6'>{desc}</div>
+                <div class="how-title">{title}</div>
+                <div class="how-desc">{desc}</div>
               </div>
             </div>
             """, unsafe_allow_html=True)
 
+    # ── Step 4 right panel: Email output + Deal tracker ───────────────────────
     elif s == 4:
         result = st.session_state.get("result")
-        deals = st.session_state.get("deals", [])
+        deals  = st.session_state.get("deals", [])
 
         if result:
             st.markdown("""
             <div style='display:flex;align-items:center;justify-content:space-between;
             padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:14px'>
               <span style='font-size:16px;font-weight:700;color:var(--tx)'>Email Generated</span>
-              <span style='padding:5px 12px;background:rgba(0,224,150,.12);
-              border:1px solid rgba(0,224,150,.3);border-radius:4px;
-              font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;
-              letter-spacing:2px;text-transform:uppercase;color:var(--green)'>✓ READY</span>
+              <span class="ready-badge">✓ READY</span>
             </div>
             """, unsafe_allow_html=True)
 
             conf = result.get("confidence", 72)
-            pct = fmt_pct(st.session_state.get("n_quoted",""), st.session_state.get("n_target",""))
+            pct  = fmt_pct(st.session_state.get("n_quoted",""), st.session_state.get("n_target",""))
             c1, c2, c3 = st.columns(3)
             for col, label, val, color in [
                 (c1, "Target Price", st.session_state.get("n_target","—"), "var(--green)"),
@@ -614,15 +786,14 @@ with right:
                 dc = deal_colors.get(status, "#4f9cf9")
 
                 st.markdown(f"""
-                <div class="deal-card" style="--dc:{dc}">
-                  <style>.deal-card[style*="{dc}"]::before{{background:{dc}}}</style>
+                <div class="deal-card" style="border-left:3px solid {dc}">
                   <div class="deal-top">
-                    <div class="deal-ico">{ico}</div>
-                    <div class="deal-info">
+                    <div style="font-size:18px;flex-shrink:0;margin-top:2px">{ico}</div>
+                    <div style="flex:1;min-width:0">
                       <div class="deal-vendor">{deal['vendor']}</div>
                       <div class="deal-product">{deal['product']}{f" — {deal['qty']}" if deal.get('qty') else ""}</div>
-                      <div class="deal-subject">{deal.get('subject','')}</div>
-                      <div class="deal-chips"><span class="dc {badge_cls}">{badge_label}</span></div>
+                      <div style="font-size:10px;color:var(--mu);font-style:italic;margin-bottom:4px">{deal.get('subject','')}</div>
+                      <span class="dc {badge_cls}">{badge_label}</span>
                     </div>
                     <div class="deal-prices">
                       <div class="dp-orig">{deal['quoted']}</div>
@@ -652,7 +823,7 @@ with right:
                     st.markdown(f"""
                     <div style='background:rgba(79,156,249,0.06);border:1px solid rgba(79,156,249,0.2);
                     border-radius:8px;padding:14px;margin-top:12px;
-                    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--blue)'>
+                    font-family:"Courier New",monospace;font-size:11px;color:var(--blue)'>
                       Paste vendor reply for <strong style='color:var(--tx)'>{deal['vendor']}</strong> below:
                     </div>
                     """, unsafe_allow_html=True)
@@ -688,7 +859,7 @@ Vendor's reply:
 Write strongest counter-response toward {deal['target']}. Sign as {deal['myName']}."""
                             with st.spinner("AI reading reply and crafting counter-offer..."):
                                 try:
-                                    raw = call_groq(st.session_state.cfg_api, [
+                                    raw = call_groq([
                                         {"role":"system","content":SYS2},
                                         {"role":"user","content":USR2}
                                     ])
