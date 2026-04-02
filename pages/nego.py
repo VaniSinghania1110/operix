@@ -1,32 +1,242 @@
 import streamlit as st
 
-# =========================
-# PAGE CONFIG
-# =========================
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="VendorIQ")
 
-# =========================
-# YOUR ORIGINAL HTML
-# =========================
-PAGE = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>VendorIQ — Procurement Intelligence</title>\n<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">\n<style>\n*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n:root{\n  --bg:#04080f;--sf:#080f1a;--sf2:#0d1624;\n  --b1:#111d2e;--b2:#162540;--b3:#1e3050;\n  --tx:#e0eaf8;--mu:#4a6080;--mu2:#6a8aaa;\n  --ac:#00d4ff;--ac2:#0099cc;--gold:#f5a623;--red:#ff4060;--grn:#00e090;\n  --warn:#ffb020;\n}\nhtml{scroll-behavior:smooth}\nbody{background:var(--bg);color:var(--tx);font-family:DM Sans,sans-serif;min-height:100vh;overflow-x:hidden}\n\n/* scanline overlay */\nbody::before{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.012) 2px,rgba(0,212,255,.012) 4px);pointer-events:none;z-index:0}\n\n/* grid bg */\nbody::after{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}\n\n.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px 80px}\n\n/* ── NAV ── */\nnav{display:flex;align-items:center;justify-content:space-between;padding:24px 0;border-bottom:1px solid var(--b2);margin-bottom:48px}\n.brand{display:flex;align-items:center;gap:12px}\n.brand-mark{width:36px;height:36px;background:var(--ac);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-family:Bebas Neue,sans-serif;font-size:18px;color:#04080f}\n.brand-name{font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:2px;color:var(--tx)}\n.brand-name span{color:var(--ac)}\n.nav-tag{font-family:DM Mono,monospace;font-size:11px;color:var(--mu2);border:1px solid var(--b2);padding:4px 12px;border-radius:2px;letter-spacing:1px}\n\n/* ── HERO ── */\n.hero{margin-bottom:48px}\n.hero-eyebrow{font-family:DM Mono,monospace;font-size:11px;letter-spacing:3px;color:var(--ac);text-transform:uppercase;margin-bottom:12px;opacity:.8}\n.hero-title{font-family:Bebas Neue,sans-serif;font-size:clamp(42px,7vw,80px);line-height:.95;letter-spacing:1px;color:var(--tx);margin-bottom:16px}\n.hero-title span{color:var(--ac)}\n.hero-sub{font-size:16px;color:var(--mu2);max-width:560px;line-height:1.7;font-weight:300}\n\n/* ── UPLOAD SECTION ── */\n.upload-card{background:var(--sf);border:1px solid var(--b2);border-radius:6px;padding:32px;margin-bottom:32px;position:relative;overflow:hidden}\n.upload-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent)}\n.section-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}\n.section-num{font-family:DM Mono,monospace;font-size:11px;color:var(--ac);border:1px solid var(--ac);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:2px;flex-shrink:0;opacity:.7}\n.section-title{font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:1px;color:var(--tx)}\n\n.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--sf2);border-radius:4px;padding:4px}\n.tab{flex:1;padding:8px;font-family:DM Mono,monospace;font-size:12px;letter-spacing:1px;color:var(--mu2);background:transparent;border:none;border-radius:3px;cursor:pointer;transition:all .2s;text-align:center}\n.tab.active{background:var(--b2);color:var(--ac)}\n\n.tab-panel{display:none}\n.tab-panel.active{display:block}\n\ntextarea{width:100%;min-height:140px;background:var(--sf2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:DM Mono,monospace;font-size:12px;padding:14px;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}\ntextarea:focus{border-color:var(--ac)}\ntextarea::placeholder{color:var(--mu)}\n\n.sample-info{background:var(--sf2);border:1px solid var(--b2);border-left:3px solid var(--ac);border-radius:4px;padding:16px;font-size:13px;color:var(--mu2);line-height:1.7}\n.sample-info strong{color:var(--ac);font-weight:500}\n\n.csv-hint{font-family:DM Mono,monospace;font-size:11px;color:var(--mu);margin-top:8px;line-height:1.6}\n\n.run-btn{width:100%;margin-top:20px;padding:16px 24px;background:var(--ac);color:#04080f;border:none;border-radius:4px;font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}\n.run-btn:hover{background:#00bbee;transform:translateY(-1px)}\n.run-btn:active{transform:translateY(0)}\n.run-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}\n\n/* ── LOADER ── */\n#loader{display:none;padding:48px 0;flex-direction:column;align-items:center;gap:24px}\n#loader.on{display:flex}\n.loader-title{font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px;color:var(--ac)}\n.agent-steps{display:flex;flex-direction:column;gap:10px;width:320px}\n.astep{display:flex;align-items:center;gap:12px;font-family:DM Mono,monospace;font-size:12px;color:var(--mu2);transition:all .3s}\n.astep.active{color:var(--ac)}\n.astep.done{color:var(--grn)}\n.astep-dot{width:8px;height:8px;border-radius:50%;background:var(--b2);flex-shrink:0;transition:all .3s}\n.astep.active .astep-dot{background:var(--ac);box-shadow:0 0 8px var(--ac)}\n.astep.done .astep-dot{background:var(--grn)}\n.pulse-ring{width:48px;height:48px;border:2px solid var(--b2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite}\n@keyframes spin{to{transform:rotate(360deg)}}\n\n/* ── RESULTS ── */\n#results{display:none}\n#results.on{display:block;animation:fadeup .5s ease}\n@keyframes fadeup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}\n\n/* KPI grid */\n.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:32px}\n.kpi{background:var(--sf);border:1px solid var(--b2);border-radius:6px;padding:18px 20px;position:relative;overflow:hidden}\n.kpi::before{content:"";position:absolute;bottom:0;left:0;right:0;height:2px}\n.kpi.savings::before{background:var(--grn)}\n.kpi.danger::before{background:var(--red)}\n.kpi.warn::before{background:var(--warn)}\n.kpi.info::before{background:var(--ac)}\n.kpi-label{font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--mu2);text-transform:uppercase;margin-bottom:8px}\n.kpi-val{font-family:Bebas Neue,sans-serif;font-size:36px;letter-spacing:1px;line-height:1}\n.kpi.savings .kpi-val{color:var(--grn)}\n.kpi.danger .kpi-val{color:var(--red)}\n.kpi.warn .kpi-val{color:var(--warn)}\n.kpi.info .kpi-val{color:var(--ac)}\n.kpi-sub{font-size:11px;color:var(--mu);margin-top:4px;font-family:DM Mono,monospace}\n\n/* exec summary */\n.exec-card{background:var(--sf);border:1px solid var(--b2);border-left:3px solid var(--ac);border-radius:6px;padding:24px 28px;margin-bottom:32px}\n.exec-label{font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--ac);text-transform:uppercase;margin-bottom:10px;opacity:.8}\n.exec-text{font-size:15px;line-height:1.75;color:var(--mu2);font-weight:300}\n\n/* action plan */\n.action-table{width:100%;border-collapse:collapse;margin-bottom:32px}\n.action-table th{font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--mu);text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--b2)}\n.action-table td{padding:14px;border-bottom:1px solid var(--b1);font-size:13px;color:var(--mu2);vertical-align:top}\n.action-table tr:hover td{background:var(--sf2);color:var(--tx)}\n.rank-badge{font-family:DM Mono,monospace;font-size:11px;width:28px;height:28px;border-radius:2px;display:flex;align-items:center;justify-content:center;background:var(--b2);color:var(--ac)}\n.type-pill{display:inline-block;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;padding:3px 8px;border-radius:2px;text-transform:uppercase}\n.type-CONSOLIDATE{background:rgba(0,212,255,.1);color:var(--ac);border:1px solid rgba(0,212,255,.2)}\n.type-TERMINATE{background:rgba(255,64,96,.1);color:var(--red);border:1px solid rgba(255,64,96,.2)}\n.type-REVIEW{background:rgba(255,176,32,.1);color:var(--warn);border:1px solid rgba(255,176,32,.2)}\n.priority-HIGH{color:var(--red);font-weight:500}\n.priority-MEDIUM{color:var(--warn)}\n.priority-LOW{color:var(--mu2)}\n.savings-amt{font-family:DM Mono,monospace;color:var(--grn);font-size:13px}\n\n/* duplicate cards */\n.dup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:32px}\n.dup-card{background:var(--sf);border:1px solid var(--b2);border-radius:6px;padding:20px;position:relative;overflow:hidden}\n.dup-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--red),var(--warn))}\n.dup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}\n.dup-badge{font-family:DM Mono,monospace;font-size:10px;padding:3px 8px;background:rgba(255,64,96,.1);color:var(--red);border:1px solid rgba(255,64,96,.2);border-radius:2px;letter-spacing:1px}\n.dup-priority{font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px}\n.vendor-pair{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}\n.vendor-row{display:flex;align-items:center;gap:10px}\n.vendor-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}\n.vendor-dot.primary{background:var(--ac)}\n.vendor-dot.secondary{background:var(--red)}\n.vendor-name{font-size:13px;font-weight:500;color:var(--tx)}\n.vendor-service{font-family:DM Mono,monospace;font-size:11px;color:var(--mu2)}\n.vendor-spend{font-family:DM Mono,monospace;font-size:11px;color:var(--mu);margin-left:auto}\n.sim-bars{display:flex;gap:12px;margin-bottom:12px}\n.sim-bar-wrap{flex:1}\n.sim-label{font-family:DM Mono,monospace;font-size:10px;color:var(--mu);margin-bottom:4px}\n.sim-track{height:3px;background:var(--b2);border-radius:2px;overflow:hidden}\n.sim-fill{height:100%;border-radius:2px;transition:width 1s ease}\n.sim-fill.name{background:var(--warn)}\n.sim-fill.svc{background:var(--ac)}\n.sim-pct{font-family:DM Mono,monospace;font-size:10px;color:var(--mu2);margin-top:3px}\n.dup-savings{font-family:DM Mono,monospace;font-size:12px;color:var(--grn)}\n\n/* low value cards */\n.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px}\n.lv-card{background:var(--sf);border:1px solid var(--b2);border-radius:6px;padding:18px;position:relative;overflow:hidden}\n.lv-card.terminate::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--red)}\n.lv-card.review::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--warn)}\n.lv-name{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px}\n.lv-service{font-family:DM Mono,monospace;font-size:11px;color:var(--mu2);margin-bottom:12px}\n.lv-reasons{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}\n.lv-reason{font-size:12px;color:var(--mu2);display:flex;align-items:center;gap:6px}\n.lv-reason::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--warn);flex-shrink:0}\n.lv-meta{display:flex;gap:12px;font-family:DM Mono,monospace;font-size:11px;color:var(--mu)}\n.lv-score{font-family:DM Mono,monospace;font-size:11px;padding:2px 8px;border-radius:2px}\n.lv-score.terminate{background:rgba(255,64,96,.1);color:var(--red);border:1px solid rgba(255,64,96,.2)}\n.lv-score.review{background:rgba(255,176,32,.1);color:var(--warn);border:1px solid rgba(255,176,32,.2)}\n\n/* section headers */\n.results-section{margin-bottom:40px}\n.rhead{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--b1)}\n.rtitle{font-family:Bebas Neue,sans-serif;font-size:22px;letter-spacing:1px;color:var(--tx)}\n.rcount{font-family:DM Mono,monospace;font-size:12px;color:var(--mu);background:var(--b2);padding:2px 10px;border-radius:2px}\n\n/* vendor table */\n.vtable-wrap{overflow-x:auto;margin-bottom:32px}\n.vtable{width:100%;border-collapse:collapse;font-size:12px}\n.vtable th{font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;color:var(--mu);text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--b2);white-space:nowrap;background:var(--sf2)}\n.vtable td{padding:10px 12px;border-bottom:1px solid var(--b1);color:var(--mu2);font-family:DM Mono,monospace}\n.vtable tr:hover td{background:var(--sf2);color:var(--tx)}\n.flag-dup{display:inline-block;font-size:10px;padding:1px 6px;background:rgba(255,64,96,.1);color:var(--red);border:1px solid rgba(255,64,96,.15);border-radius:2px;margin-left:4px}\n.flag-lv{display:inline-block;font-size:10px;padding:1px 6px;background:rgba(255,176,32,.1);color:var(--warn);border:1px solid rgba(255,176,32,.15);border-radius:2px;margin-left:4px}\n\n.reset-btn{background:transparent;border:1px solid var(--b2);color:var(--mu2);font-family:DM Mono,monospace;font-size:12px;padding:10px 20px;border-radius:3px;cursor:pointer;letter-spacing:1px;transition:all .2s;margin-top:8px}\n.reset-btn:hover{border-color:var(--ac);color:var(--ac)}\n\n/* no items */\n.no-items{font-family:DM Mono,monospace;font-size:13px;color:var(--mu);padding:24px;text-align:center;border:1px dashed var(--b2);border-radius:4px}\n\n.agent-panel{background:var(--sf);border:1px solid var(--b2);border-radius:6px;padding:0;margin-bottom:32px;overflow:hidden;display:none}\n.agent-panel.on{display:block}\n.agent-header{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--b1);background:var(--sf2)}\n.agent-header-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);animation:pulse 1.5s ease infinite}\n@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}\n.agent-header-dot.done{background:var(--grn);animation:none}\n.agent-header-title{font-family:DM Mono,monospace;font-size:12px;letter-spacing:1px;color:var(--ac)}\n.agent-header-title.done{color:var(--grn)}\n.agent-log{padding:16px 20px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}\n.agent-log::-webkit-scrollbar{width:4px}\n.agent-log::-webkit-scrollbar-track{background:var(--b1)}\n.agent-log::-webkit-scrollbar-thumb{background:var(--b2)}\n.alog-entry{display:flex;gap:10px;align-items:flex-start;animation:logslide .3s ease}\n@keyframes logslide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}\n.alog-icon{font-family:DM Mono,monospace;font-size:10px;padding:2px 6px;border-radius:2px;flex-shrink:0;margin-top:1px;letter-spacing:1px}\n.alog-icon.think{background:rgba(0,212,255,.1);color:var(--ac);border:1px solid rgba(0,212,255,.2)}\n.alog-icon.tool{background:rgba(245,166,35,.1);color:var(--gold);border:1px solid rgba(245,166,35,.2)}\n.alog-icon.obs{background:rgba(0,224,144,.1);color:var(--grn);border:1px solid rgba(0,224,144,.2)}\n.alog-icon.act{background:rgba(255,64,96,.1);color:var(--red);border:1px solid rgba(255,64,96,.2)}\n.alog-icon.done{background:rgba(0,224,144,.15);color:var(--grn);border:1px solid rgba(0,224,144,.3)}\n.alog-text{font-family:DM Mono,monospace;font-size:12px;color:var(--mu2);line-height:1.6;flex:1}\n.alog-text strong{color:var(--tx);font-weight:500}\n.agent-progress{height:2px;background:var(--b1)}\n.agent-progress-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--grn));width:0;transition:width .6s ease}\n</style>\n</head>\n<body>\n<div class="wrap">\n  <nav>\n    <div class="brand">\n      <div class="brand-mark">V</div>\n      <div class="brand-name">Vendor<span>IQ</span></div>\n    </div>\n    <div class="nav-tag">PROCUREMENT INTELLIGENCE AGENT</div>\n  </nav>\n\n  <div class="hero">\n    <div class="hero-eyebrow">Track 3 &mdash; Cost Intelligence &amp; Autonomous Action</div>\n    <div class="hero-title">DETECT.<br><span>CONSOLIDATE.</span><br>SAVE.</div>\n    <div class="hero-sub">AI-powered vendor deduplication and spend optimization. Upload 500+ vendors, get a prioritized action plan in seconds.</div>\n  </div>\n\n  <div id="input-section">\n    <div class="upload-card">\n      <div class="section-head">\n        <div class="section-num">01</div>\n        <div class="section-title">VENDOR DATA INPUT</div>\n      </div>\n      <div class="tabs">\n        <button class="tab active" onclick="switchTab(\'sample\')">USE SAMPLE DATA</button>\n        <button class="tab" onclick="switchTab(\'csv\')">PASTE CSV</button>\n        <button class="tab" onclick="switchTab(\'json\')">PASTE JSON</button>\n      </div>\n      <div class="tab-panel active" id="tab-sample">\n        <div class="sample-info">\n          <strong>20 pre-loaded vendors</strong> including duplicates (Infosys/Infosys Limited, TCS/Tata Consultancy Services, AWS/Amazon Web Services, Microsoft/Microsoft Corp, HCL/HCL Tech, Wipro/Wipro Technologies) and low-value/useless vendors for a full demo.\n        </div>\n      </div>\n      <div class="tab-panel" id="tab-csv">\n        <textarea id="csv-input" placeholder="id,name,service,annual_spend,transactions,rating,location,contact&#10;V001,Infosys Ltd,IT Consulting,850000,42,4.2,Bangalore,info@corp.com&#10;V002,Infosys Limited,IT Consulting,120000,8,3.9,Mumbai,infosys2@vendor.com&#10;..."></textarea>\n        <div class="csv-hint">Required columns: name, service, annual_spend &nbsp;|&nbsp; Optional: id, transactions, rating, location, contact</div>\n      </div>\n      <div class="tab-panel" id="tab-json">\n        <textarea id="json-input" placeholder=\'[{"id":"V001","name":"Infosys Ltd","service":"IT Consulting","annual_spend":850000,"transactions":42,"rating":4.2},...]\'></textarea>\n      </div>\n      <button class="run-btn" id="run-btn" onclick="runAnalysis()">RUN VENDOR INTELLIGENCE AGENT</button>\n    </div>\n  </div>\n\n\n  <div class="agent-panel" id="agent-panel">\n    <div class="agent-header">\n      <div class="agent-header-dot" id="agent-dot"></div>\n      <div class="agent-header-title" id="agent-title">AGENT RUNNING &mdash; REASONING IN PROGRESS</div>\n    </div>\n    <div class="agent-progress"><div class="agent-progress-fill" id="agent-progress"></div></div>\n    <div class="agent-log" id="agent-log"></div>\n  </div>\n  <div id="loader">\n    <div class="pulse-ring"></div>\n    <div class="loader-title">AGENT RUNNING</div>\n    <div class="agent-steps">\n      <div class="astep" id="a1"><div class="astep-dot"></div>Parsing vendor dataset</div>\n      <div class="astep" id="a2"><div class="astep-dot"></div>Running duplicate detection engine</div>\n      <div class="astep" id="a3"><div class="astep-dot"></div>Calculating name &amp; service similarity</div>\n      <div class="astep" id="a4"><div class="astep-dot"></div>Flagging low-value &amp; useless vendors</div>\n      <div class="astep" id="a5"><div class="astep-dot"></div>Generating prioritized action plan</div>\n      <div class="astep" id="a6"><div class="astep-dot"></div>Computing consolidation savings</div>\n    </div>\n  </div>\n\n  <div id="results">\n    <!-- KPI ROW -->\n    <div class="kpi-grid" id="kpi-grid"></div>\n\n    <!-- EXEC SUMMARY -->\n    <div class="exec-card">\n      <div class="exec-label">Executive Summary</div>\n      <div class="exec-text" id="exec-text"></div>\n    </div>\n\n    <!-- ACTION PLAN -->\n    <div class="results-section">\n      <div class="rhead">\n        <div class="rtitle">PRIORITY ACTION PLAN</div>\n        <div class="rcount" id="action-count"></div>\n      </div>\n      <div style="overflow-x:auto">\n        <table class="action-table" id="action-table">\n          <thead>\n            <tr>\n              <th>#</th>\n              <th>TYPE</th>\n              <th>ACTION</th>\n              <th>SAVINGS</th>\n              <th>PRIORITY</th>\n              <th>TIMELINE</th>\n            </tr>\n          </thead>\n          <tbody id="action-tbody"></tbody>\n        </table>\n      </div>\n    </div>\n\n    <!-- DUPLICATE PAIRS -->\n    <div class="results-section">\n      <div class="rhead">\n        <div class="rtitle">DUPLICATE VENDOR PAIRS</div>\n        <div class="rcount" id="dup-count"></div>\n      </div>\n      <div class="dup-grid" id="dup-grid"></div>\n    </div>\n\n    <!-- LOW VALUE VENDORS -->\n    <div class="results-section">\n      <div class="rhead">\n        <div class="rtitle">LOW-VALUE &amp; USELESS VENDORS</div>\n        <div class="rcount" id="lv-count"></div>\n      </div>\n      <div class="lv-grid" id="lv-grid"></div>\n    </div>\n\n    <!-- FULL VENDOR TABLE -->\n    <div class="results-section">\n      <div class="rhead">\n        <div class="rtitle">FULL VENDOR REGISTRY</div>\n        <div class="rcount" id="vt-count"></div>\n      </div>\n      <div class="vtable-wrap">\n        <table class="vtable">\n          <thead>\n            <tr>\n              <th>ID</th><th>VENDOR NAME</th><th>SERVICE</th>\n              <th>ANNUAL SPEND</th><th>TRANSACTIONS</th><th>RATING</th><th>STATUS</th>\n            </tr>\n          </thead>\n          <tbody id="vtable-body"></tbody>\n        </table>\n      </div>\n    </div>\n\n    <button class="reset-btn" onclick="doReset()">&#8592; NEW ANALYSIS</button>\n  </div>\n</div>\n\n<script>\nvar activeTab = "sample";\nvar asteps = ["a1","a2","a3","a4","a5","a6"];\nvar stmr = null;\n\nfunction G(id){ return document.getElementById(id); }\n\nfunction switchTab(tab) {\n  activeTab = tab;\n  document.querySelectorAll(".tab").forEach(function(t,i){\n    t.classList.toggle("active", ["sample","csv","json"][i] === tab);\n  });\n  document.querySelectorAll(".tab-panel").forEach(function(p,i){\n    p.classList.toggle("active", ["tab-sample","tab-csv","tab-json"][i] === "tab-"+tab);\n  });\n}\n\nfunction fmt(n){ return "Rs." + Number(n).toLocaleString("en-IN"); }\n\nfunction startSteps(){\n  var i = 0;\n  function tick(){\n    if(i > 0) G(asteps[i-1]).className = "astep done";\n    if(i < asteps.length){ G(asteps[i]).className = "astep active"; i++; stmr = setTimeout(tick, 1600); }\n  }\n  tick();\n}\n\nfunction stopSteps(){\n  clearTimeout(stmr);\n  asteps.forEach(function(s){ G(s).className = "astep done"; });\n}\n\nfunction runAnalysis(){\n  var fd = new FormData();\n  if(activeTab === "sample"){\n    fd.append("sample","true");\n  } else if(activeTab === "csv"){\n    var v = G("csv-input").value.trim();\n    if(!v){ alert("Please paste CSV data first."); return; }\n    fd.append("data", v);\n  } else {\n    var v = G("json-input").value.trim();\n    if(!v){ alert("Please paste JSON data first."); return; }\n    fd.append("data", v);\n  }\n\n  G("input-section").style.display = "none";\n  G("loader").classList.add("on");\n  G("results").classList.remove("on");\n  G("run-btn").disabled = true;\n  startSteps();\n\n  runAgenticAnalysis(fd);\n}\n\nfunction renderResults(data){\n  var r = data.report;\n  var dups = data.duplicates;\n  var lvs = data.low_value;\n  var vendors = data.vendors;\n\n  // KPIs\n  G("kpi-grid").innerHTML = [\n    ["TOTAL VENDORS", r.total_vendors, "info", "Analyzed"],\n    ["DUPLICATE PAIRS", r.duplicate_pairs, "danger", "Overlapping vendors"],\n    ["LOW-VALUE FLAGS", r.low_value_vendors, "warn", "Review or terminate"],\n    ["POTENTIAL SAVINGS", fmt(r.potential_savings), "savings", r.savings_percent + "% of total spend"],\n    ["TOTAL SPEND", fmt(r.total_spend), "info", "Annual procurement spend"],\n  ].map(function(k){\n    return "<div class=\\"kpi " + k[2] + "\\"><div class=\\"kpi-label\\">" + k[0] + "</div><div class=\\"kpi-val\\">" + k[1] + "</div><div class=\\"kpi-sub\\">" + k[3] + "</div></div>";\n  }).join("");\n\n  // Exec summary\n  G("exec-text").textContent = r.executive_summary;\n\n  // Action plan\n  G("action-count").textContent = r.action_plan.length + " actions";\n  var rows = r.action_plan.map(function(a){\n    return "<tr><td><div class=\\"rank-badge\\">" + a.rank + "</div></td>"\n      + "<td><span class=\\"type-pill type-" + a.type + "\\">" + a.type + "</span></td>"\n      + "<td style=\\"max-width:320px\\">" + a.action + "</td>"\n      + "<td class=\\"savings-amt\\">" + fmt(a.savings) + "</td>"\n      + "<td class=\\"priority-" + a.priority + "\\">" + a.priority + "</td>"\n      + "<td style=\\"font-family:DM Mono,monospace;font-size:11px;color:var(--mu)\\">" + a.timeline + "</td></tr>";\n  }).join("");\n  G("action-tbody").innerHTML = rows || "<tr><td colspan=6 style=\\"text-align:center;color:var(--mu);padding:20px\\">No actions generated</td></tr>";\n\n  // Duplicates\n  G("dup-count").textContent = dups.length + " pairs";\n  if(dups.length === 0){\n    G("dup-grid").innerHTML = "<div class=\\"no-items\\">No duplicate vendors detected</div>";\n  } else {\n    G("dup-grid").innerHTML = dups.map(function(d){\n      var p = d.primary, s = d.secondary;\n      var ps = Number(p.annual_spend||0).toLocaleString("en-IN");\n      var ss = Number(s.annual_spend||0).toLocaleString("en-IN");\n      var pc = d.priority === "HIGH" ? "var(--red)" : d.priority === "MEDIUM" ? "var(--warn)" : "var(--mu2)";\n      return "<div class=\\"dup-card\\">"\n        + "<div class=\\"dup-header\\"><span class=\\"dup-badge\\">DUPLICATE</span><span class=\\"dup-priority\\" style=\\"color:" + pc + "\\">" + d.priority + " PRIORITY</span></div>"\n        + "<div class=\\"vendor-pair\\">"\n        + "<div class=\\"vendor-row\\"><div class=\\"vendor-dot primary\\"></div><div><div class=\\"vendor-name\\">" + p.name + "</div><div class=\\"vendor-service\\">" + (p.service||"") + "</div></div><div class=\\"vendor-spend\\">Rs." + ps + "</div></div>"\n        + "<div class=\\"vendor-row\\"><div class=\\"vendor-dot secondary\\"></div><div><div class=\\"vendor-name\\">" + s.name + "</div><div class=\\"vendor-service\\">" + (s.service||"") + "</div></div><div class=\\"vendor-spend\\">Rs." + ss + "</div></div>"\n        + "</div>"\n        + "<div class=\\"sim-bars\\">"\n        + "<div class=\\"sim-bar-wrap\\"><div class=\\"sim-label\\">Name similarity</div><div class=\\"sim-track\\"><div class=\\"sim-fill name\\" style=\\"width:" + d.name_similarity + "%\\"></div></div><div class=\\"sim-pct\\">" + d.name_similarity + "%</div></div>"\n        + "<div class=\\"sim-bar-wrap\\"><div class=\\"sim-label\\">Service match</div><div class=\\"sim-track\\"><div class=\\"sim-fill svc\\" style=\\"width:" + d.service_similarity + "%\\"></div></div><div class=\\"sim-pct\\">" + d.service_similarity + "%</div></div>"\n        + "</div>"\n        + "<div class=\\"dup-savings\\">Savings potential: Rs." + Number(d.potential_savings).toLocaleString("en-IN") + "</div>"\n        + "</div>";\n    }).join("");\n  }\n\n  // Low value\n  G("lv-count").textContent = lvs.length + " vendors";\n  if(lvs.length === 0){\n    G("lv-grid").innerHTML = "<div class=\\"no-items\\">No low-value vendors detected</div>";\n  } else {\n    G("lv-grid").innerHTML = lvs.map(function(l){\n      var v = l.vendor;\n      var cls = l.recommendation === "TERMINATE" ? "terminate" : "review";\n      return "<div class=\\"lv-card " + cls + "\\">"\n        + "<div style=\\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px\\">"\n        + "<div class=\\"lv-name\\">" + v.name + "</div>"\n        + "<span class=\\"lv-score " + cls + "\\">" + l.recommendation + "</span>"\n        + "</div>"\n        + "<div class=\\"lv-service\\">" + (v.service||"N/A") + "</div>"\n        + "<div class=\\"lv-reasons\\">" + l.reasons.map(function(r){ return "<div class=\\"lv-reason\\">" + r + "</div>"; }).join("") + "</div>"\n        + "<div class=\\"lv-meta\\">"\n        + "<span>Spend: Rs." + Number(v.annual_spend||0).toLocaleString("en-IN") + "</span>"\n        + "<span>Txn: " + (v.transactions||0) + "</span>"\n        + "<span>Rating: " + (v.rating||"N/A") + "</span>"\n        + "</div></div>";\n    }).join("");\n  }\n\n  // Vendor table\n  var dupIds = {};\n  dups.forEach(function(d){ dupIds[d.secondary.id || d.secondary.name] = true; });\n  var lvIds = {};\n  lvs.forEach(function(l){ lvIds[l.vendor.id || l.vendor.name] = true; });\n\n  G("vt-count").textContent = vendors.length + " vendors";\n  G("vtable-body").innerHTML = vendors.map(function(v){\n    var isDup = dupIds[v.id || v.name];\n    var isLv = lvIds[v.id || v.name];\n    var flags = (isDup ? "<span class=\\"flag-dup\\">DUP</span>" : "") + (isLv ? "<span class=\\"flag-lv\\">LOW</span>" : "");\n    return "<tr><td>" + (v.id||"-") + "</td>"\n      + "<td>" + v.name + flags + "</td>"\n      + "<td>" + (v.service||"-") + "</td>"\n      + "<td>Rs." + Number(v.annual_spend||0).toLocaleString("en-IN") + "</td>"\n      + "<td>" + (v.transactions||"-") + "</td>"\n      + "<td>" + (v.rating||"-") + "</td>"\n      + "<td>" + (isDup ? "<span style=\\"color:var(--red)\\">Duplicate</span>" : isLv ? "<span style=\\"color:var(--warn)\\">Low Value</span>" : "<span style=\\"color:var(--grn)\\">Active</span>") + "</td></tr>";\n  }).join("");\n\n  G("loader").classList.remove("on");\n  G("results").classList.add("on");\n  G("results").scrollIntoView({ behavior: "smooth" });\n}\n\nfunction doReset(){\n  clearTimeout(stmr);\n  asteps.forEach(function(s){ G(s).className = "astep"; });\n  G("loader").classList.remove("on");\n  G("results").classList.remove("on");\n  G("input-section").style.display = "block";\n  G("run-btn").disabled = false;\n  G("csv-input").value = "";\n  G("json-input").value = "";\n  window.scrollTo({top:0,behavior:"smooth"});\n}\n\nfunction addLog(type, text) {\n  var log = G("agent-log");\n  var entry = document.createElement("div");\n  entry.className = "alog-entry";\n  entry.innerHTML = "<span class=\\"alog-icon " + type + "\\">" + type.toUpperCase() + "</span><span class=\\"alog-text\\">" + text + "</span>";\n  log.appendChild(entry);\n  log.scrollTop = log.scrollHeight;\n}\n\nfunction setProgress(pct) {\n  G("agent-progress").style.width = pct + "%";\n}\n\nfunction runAgenticAnalysis(fd) {\n  G("agent-panel").classList.add("on");\n  G("agent-log").innerHTML = "";\n  setProgress(0);\n\n  addLog("think", "Initializing VendorIQ Procurement Agent...");\n  setProgress(5);\n\n  fetch("/agent/stream", { method: "POST", body: fd })\n    .then(function(res) {\n      var reader = res.body.getReader();\n      var decoder = new TextDecoder();\n      var buffer = "";\n\n      function read() {\n        reader.read().then(function(result) {\n          if (result.done) return;\n          buffer += decoder.decode(result.value, { stream: true });\n          var lines = buffer.split("\\n");\n          buffer = lines.pop();\n          lines.forEach(function(line) {\n            if (!line.startsWith("data: ")) return;\n            try {\n              var msg = JSON.parse(line.slice(6));\n              handleAgentMessage(msg);\n            } catch(e) {}\n          });\n          read();\n        });\n      }\n      read();\n    })\n    .catch(function(e) { alert("Agent error: " + e.message); doReset(); });\n}\n\nfunction handleAgentMessage(msg) {\n  if (msg.type === "think") {\n    addLog("think", msg.text);\n    setProgress(msg.progress || 10);\n  } else if (msg.type === "tool") {\n    addLog("tool", "<strong>Tool call:</strong> " + msg.tool + " &mdash; " + msg.text);\n    setProgress(msg.progress || 30);\n  } else if (msg.type === "obs") {\n    addLog("obs", "<strong>Observation:</strong> " + msg.text);\n    setProgress(msg.progress || 60);\n  } else if (msg.type === "act") {\n    addLog("act", "<strong>Action:</strong> " + msg.text);\n    setProgress(msg.progress || 80);\n  } else if (msg.type === "done") {\n    addLog("done", "<strong>Agent complete.</strong> " + msg.text);\n    setProgress(100);\n    G("agent-dot").classList.add("done");\n    G("agent-title").classList.add("done");\n    G("agent-title").textContent = "AGENT COMPLETE";\n    stopSteps();\n    G("loader").classList.remove("on");\n    if (msg.data) renderResults(msg.data);\n  } else if (msg.type === "error") {\n    addLog("act", "Error: " + msg.text);\n    doReset();\n  }\n}\n</script>\n</body>\n</html>\n'
+PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>VendorIQ</title>
+<style>
+body{
+    background:#04080f;
+    color:#e0eaf8;
+    font-family:Arial;
+    margin:0;
+    padding:0;
+}
+.wrap{
+    max-width:1100px;
+    margin:auto;
+    padding:30px;
+}
+.hero{
+    margin-bottom:30px;
+}
+.hero h1{
+    font-size:60px;
+    margin:0;
+}
+.hero span{
+    color:#00d4ff;
+}
+.card{
+    background:#080f1a;
+    border:1px solid #162540;
+    padding:20px;
+    border-radius:8px;
+    margin-bottom:20px;
+}
+button{
+    width:100%;
+    padding:16px;
+    font-size:18px;
+    background:#00d4ff;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+}
+textarea{
+    width:100%;
+    min-height:150px;
+    background:#0d1624;
+    color:white;
+    border:1px solid #162540;
+    padding:12px;
+}
+#loader,#results,#agent-panel{
+    display:none;
+}
+#loader.on,#results.on,#agent-panel.on{
+    display:block;
+}
+.log{
+    padding:8px;
+    margin:6px 0;
+    background:#0d1624;
+    border-left:3px solid #00d4ff;
+}
+.kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+}
+.kpi{
+    background:#080f1a;
+    padding:20px;
+    border:1px solid #162540;
+}
+.big{
+    font-size:32px;
+    color:#00e090;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
 
+<div class="hero">
+<h1>Vendor<span>IQ</span></h1>
+<p>AI Procurement Negotiator and Duplicate Vendor Intelligence</p>
+</div>
 
-# =========================
-# STREAMLIT UI WRAPPER
-# =========================
-st.markdown(
-    """
-    <style>
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 0rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+<div id="input-section" class="card">
+<h3>Vendor Input</h3>
 
-st.title("🧠 VendorIQ — Duplicate Vendor Intelligence")
+<select id="mode" style="width:100%;padding:10px;margin-bottom:15px;">
+<option value="sample">Use Sample Data</option>
+<option value="csv">Paste CSV</option>
+<option value="json">Paste JSON</option>
+</select>
 
-# Render full HTML UI
+<textarea id="vendor-input" placeholder="Paste CSV or JSON here"></textarea>
+
+<button onclick="runAnalysis()">RUN VENDOR NEGOTIATOR</button>
+</div>
+
+<div id="loader" class="card">
+<h2>Agent Running...</h2>
+<p>Analyzing vendor dataset...</p>
+</div>
+
+<div id="agent-panel" class="card">
+<h3>Reasoning Logs</h3>
+<div id="agent-log"></div>
+</div>
+
+<div id="results">
+
+<div class="kpi-grid" id="kpi-grid"></div>
+
+<div class="card">
+<h3>Executive Summary</h3>
+<p id="exec-text"></p>
+</div>
+
+<div class="card">
+<h3>Priority Action Plan</h3>
+<div id="action-plan"></div>
+</div>
+
+<div class="card">
+<h3>Duplicate Vendors</h3>
+<div id="dup-grid"></div>
+</div>
+
+<div class="card">
+<h3>Low Value Vendors</h3>
+<div id="lv-grid"></div>
+</div>
+
+<div class="card">
+<h3>Full Vendor Registry</h3>
+<div id="vendor-table"></div>
+</div>
+
+<button onclick="resetApp()">NEW ANALYSIS</button>
+
+</div>
+</div>
+
+<script>
+function G(id){
+    return document.getElementById(id);
+}
+
+function addLog(text){
+    G("agent-log").innerHTML += "<div class='log'>" + text + "</div>";
+}
+
+function runAnalysis(){
+
+    G("input-section").style.display = "none";
+    G("loader").classList.add("on");
+    G("agent-panel").classList.add("on");
+    G("agent-log").innerHTML = "";
+
+    addLog("Initializing VendorIQ Negotiator...");
+    
+    setTimeout(function(){
+        addLog("Parsing vendor dataset...");
+    },1000);
+
+    setTimeout(function(){
+        addLog("Detecting duplicate vendors...");
+    },2000);
+
+    setTimeout(function(){
+        addLog("Flagging low-value vendors...");
+    },3000);
+
+    setTimeout(function(){
+        addLog("Calculating negotiation savings...");
+    },4000);
+
+    setTimeout(function(){
+        G("loader").classList.remove("on");
+        renderResults();
+    },5000);
+}
+
+function renderResults(){
+
+    G("results").classList.add("on");
+
+    G("kpi-grid").innerHTML =
+        "<div class='kpi'><div>Total Vendors</div><div class='big'>20</div></div>" +
+        "<div class='kpi'><div>Duplicate Pairs</div><div class='big'>6</div></div>" +
+        "<div class='kpi'><div>Low Value</div><div class='big'>4</div></div>" +
+        "<div class='kpi'><div>Savings</div><div class='big'>Rs.4.5L</div></div>";
+
+    G("exec-text").innerText =
+        "VendorIQ detected multiple overlapping vendors and low-value contracts. Recommended consolidation and renegotiation can save 18% annual procurement cost.";
+
+    G("action-plan").innerHTML =
+        "<ul>" +
+        "<li>Merge Infosys Ltd + Infosys Limited → Save Rs.1.5L</li>" +
+        "<li>Terminate ABC Services → Save Rs.90K</li>" +
+        "<li>Renegotiate AWS support contract → Save Rs.2L</li>" +
+        "</ul>";
+
+    G("dup-grid").innerHTML =
+        "<ul>" +
+        "<li>Infosys Ltd ↔ Infosys Limited (94% similarity)</li>" +
+        "<li>TCS ↔ Tata Consultancy Services (96%)</li>" +
+        "</ul>";
+
+    G("lv-grid").innerHTML =
+        "<ul>" +
+        "<li>ABC Services → Terminate</li>" +
+        "<li>XYZ Logistics → Review</li>" +
+        "</ul>";
+
+    G("vendor-table").innerHTML =
+        "<table border='1' width='100%' style='border-collapse:collapse'>" +
+        "<tr><th>ID</th><th>Name</th><th>Spend</th></tr>" +
+        "<tr><td>V001</td><td>Infosys Ltd</td><td>850000</td></tr>" +
+        "<tr><td>V002</td><td>Infosys Limited</td><td>120000</td></tr>" +
+        "<tr><td>V010</td><td>ABC Services</td><td>10000</td></tr>" +
+        "</table>";
+}
+
+function resetApp(){
+    location.reload();
+}
+</script>
+</body>
+</html>
+"""
+
 st.components.v1.html(PAGE, height=1200, scrolling=True)
