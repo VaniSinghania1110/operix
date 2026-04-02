@@ -343,6 +343,90 @@ def analyze_product(data):
     )
     return r.choices[0].message.content
 
+def parse_to_flashcards(text):
+    """Parse markdown AI output into a list of {title, items, body} dicts."""
+    cards = []
+    current_title = None
+    current_items = []
+    current_body  = []
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        # Section heading: ### Strengths  or  **Strengths**
+        heading_match = re.match(r'^#{1,3}\s+(.+)', line) or re.match(r'^\*\*([^*]+)\*\*\s*$', line)
+        if heading_match:
+            if current_title:
+                cards.append({"title": current_title, "items": current_items, "body": " ".join(current_body)})
+            current_title = heading_match.group(1).strip(": ")
+            current_items = []
+            current_body  = []
+            continue
+
+        # Numbered / bullet item
+        item_match = re.match(r'^[\d\-\*•]+[.\)]\s*(.+)', line) or re.match(r'^[-*•]\s+(.+)', line)
+        if item_match and current_title:
+            # clean inner **bold**
+            clean = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', item_match.group(1))
+            current_items.append(clean)
+        elif current_title and line:
+            clean = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', line)
+            current_body.append(clean)
+
+    if current_title:
+        cards.append({"title": current_title, "items": current_items, "body": " ".join(current_body)})
+
+    return cards
+
+def render_flashcards(cards):
+    """Render parsed cards as styled HTML flashcards."""
+    CARD_META = {
+        "strengths":    ("✦", "#00ff8c", "rgba(0,255,140,0.08)",  "rgba(0,255,140,0.25)"),
+        "risks":        ("⚠", "#ff6b4a", "rgba(255,107,74,0.08)", "rgba(255,107,74,0.25)"),
+        "pricing":      ("◈", "#00d4ff", "rgba(0,212,255,0.08)",  "rgba(0,212,255,0.25)"),
+        "improvements": ("◎", "#c97aff", "rgba(201,122,255,0.08)","rgba(201,122,255,0.25)"),
+        "default":      ("○", "#888",    "rgba(255,255,255,0.04)", "rgba(255,255,255,0.12)"),
+    }
+
+    html = '<div style="display:flex; flex-direction:column; gap:12px;">'
+
+    for card in cards:
+        key = card["title"].lower().split()[0] if card["title"] else "default"
+        icon, accent, bg, border_color = CARD_META.get(key, CARD_META["default"])
+
+        items_html = ""
+        if card["items"]:
+            items_html = "<ul style='margin:8px 0 0; padding-left:0; list-style:none;'>"
+            for item in card["items"]:
+                items_html += f"""
+                <li style='display:flex; gap:8px; align-items:flex-start;
+                            font-size:0.83rem; line-height:1.6;
+                            color:rgba(255,255,255,0.65); margin-bottom:6px;'>
+                    <span style='color:{accent}; margin-top:3px; flex-shrink:0;'>›</span>
+                    <span>{item}</span>
+                </li>"""
+            items_html += "</ul>"
+        elif card["body"]:
+            items_html = f"<p style='font-size:0.83rem; line-height:1.65; color:rgba(255,255,255,0.6); margin:8px 0 0;'>{card['body']}</p>"
+
+        html += f"""
+        <div style="background:{bg}; border:0.5px solid {border_color};
+                    border-left:3px solid {accent}; border-radius:0 10px 10px 0;
+                    padding:1rem 1.25rem;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
+                <span style="color:{accent}; font-size:14px;">{icon}</span>
+                <span style="font-family:'Space Mono',monospace; font-size:10px;
+                             letter-spacing:0.18em; text-transform:uppercase;
+                             color:{accent}; font-weight:700;">{card['title']}</span>
+            </div>
+            {items_html}
+        </div>"""
+
+    html += "</div>"
+    return html
+
 # ───────── NAV BAR (all steps) ─────────
 st.markdown("""
 <div class="nav-bar">
@@ -519,12 +603,16 @@ elif st.session_state.step == 2:
         </p>
         """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="result-panel">
-            <p class="result-label">○ Analysis Output</p>
-            {st.session_state.result.replace(chr(10), '<br>')}
-        </div>
-        """, unsafe_allow_html=True)
+        cards = parse_to_flashcards(st.session_state.result)
+        if cards:
+            st.markdown(render_flashcards(cards), unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="result-panel">
+                <p class="result-label">○ Analysis Output</p>
+                {st.session_state.result.replace(chr(10), '<br>')}
+            </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("💬  Open Chat"):
