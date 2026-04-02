@@ -633,7 +633,7 @@ with right:
         "<div style='padding:24px 16px 0;border-left:1px solid var(--b1);height:auto;'>",
         unsafe_allow_html=True
     )
-s = st.session_state.step
+    s = st.session_state.step
 
     # ── Step 1 right panel: Agent cards ───────────────────────────────────────
     if s == 1:
