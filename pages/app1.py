@@ -176,23 +176,55 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def describe_image(img_bytes):
+    if not img_bytes:
+        return "No image uploaded."
+
     try:
         pil = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-        pil.thumbnail((1024,1024), Image.LANCZOS)
-        buf = io.BytesIO(); pil.save(buf, format="JPEG", quality=85)
+        pil.thumbnail((1024, 1024), Image.LANCZOS)
+
+        buf = io.BytesIO()
+        pil.save(buf, format="JPEG", quality=85)
+
         b64 = base64.b64encode(buf.getvalue()).decode()
+
     except Exception as e:
-        return f"Error: {e}"
-    for model in ["meta-llama/llama-4-scout-17b-16e-instruct","meta-llama/llama-4-maverick-17b-128e-instruct","llava-v1.5-7b-4096-preview"]:
+        return f"Invalid image file: {e}"
+
+    for model in [
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "llava-v1.5-7b-4096-preview"
+    ]:
         try:
-            r = client.chat.completions.create(model=model,
-                messages=[{"role":"user","content":[
-                    {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}},
-                    {"type":"text","text":"Describe this product in 60 words: what it is, packaging quality, design, colours, branding, target audience."}
-                ]}], max_tokens=200)
+            r = client.chat.completions.create(
+                model=model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{b64}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "Describe this product in 60 words: what it is, packaging quality, design, colours, branding, target audience."
+                        }
+                    ]
+                }],
+                max_tokens=200
+            )
+
             t = r.choices[0].message.content.strip()
-            if len(t) > 15: return t
-        except: continue
+
+            if len(t) > 15:
+                return t
+
+        except Exception:
+            continue
+
     return "Vision unavailable."
 
 def analyze_product(data):
