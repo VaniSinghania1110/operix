@@ -49,172 +49,443 @@ def fmt_pct(quoted, target):
     except: pass
     return ""
 
-# ── Global CSS ────────────────────────────────────────────────────────────────
+# ── Global CSS — Operix-style ─────────────────────────────────────────────────
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0b0d0f;--sf:#13161a;--card:#181c21;--b1:#232830;--b2:#2e3540;
-  --tx:#e8edf2;--mu:#5a6578;--dim:#3a4455;
-  --blue:#4da6ff;--green:#00e090;--red:#ff4757;--orange:#ff6b35;
-  --yellow:#ffc947;--teal:#00cfc8;--purple:#b06bff;
+:root {
+  --bg: #0d0f14;
+  --sf: #13161d;
+  --card: #181c26;
+  --b1: #1e2330;
+  --b2: #252c3d;
+  --tx: #e4e9f4;
+  --mu: #5a6480;
+  --dim: #2e3650;
+
+  --blue: #4f9cf9;
+  --green: #00e096;
+  --red: #ff4f5e;
+  --orange: #ff6b35;
+  --yellow: #f5c542;
+  --teal: #00cfc8;
+  --purple: #a855f7;
+  --pink: #ec4899;
 }
-html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
-  background:var(--bg)!important;color:var(--tx)!important;
-  font-family:'IBM Plex Sans',sans-serif!important;
+
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+  background: var(--bg) !important;
+  color: var(--tx) !important;
+  font-family: 'Space Grotesk', sans-serif !important;
 }
-header[data-testid="stHeader"],footer,[data-testid="stToolbar"],[data-testid="stDecoration"]{display:none!important}
-.block-container{padding:0!important;max-width:100%!important}
 
-/* NAV */
-.n-nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid var(--b1);background:var(--bg)}
-.n-nav-l{display:flex;align-items:center;gap:14px}
-.n-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--yellow),#cc8800);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.n-brand{font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--tx)}
-.n-brand span{color:var(--yellow)}
-.n-badge{display:flex;align-items:center;gap:6px;border:1px solid var(--b2);border-radius:20px;padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--tx)}
-.n-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-.n-nav-r{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mu)}
+header[data-testid="stHeader"],
+footer,
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] { display: none !important; }
 
-/* STEPS BAR */
-.steps-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:4px;margin:20px 0}
-.step-tab{padding:10px 8px;text-align:center;border-radius:8px;cursor:default;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:3px}
-.step-tab .st-num{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu)}
-.step-tab .st-ico{font-size:18px}
-.step-tab .st-label{font-size:11px;font-weight:600;color:var(--mu)}
-.step-tab.active{background:var(--card);border:1px solid var(--b2)}
-.step-tab.active .st-num{color:var(--yellow)}
-.step-tab.active .st-label{color:var(--tx)}
-.step-tab.done .st-num{color:var(--green)}
-.step-tab.done .st-label{color:var(--green)}
+.block-container { padding: 0 !important; max-width: 100% !important; }
 
-/* SECTION RULE */
-.srule{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.srule-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mu);white-space:nowrap;display:flex;align-items:center;gap:8px}
-.srule-title::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--yellow)}
-.srule-line{flex:1;height:1px;background:var(--b1)}
-
-/* FORM CARDS */
-.fcard{background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:20px;margin-bottom:16px}
-.tip-box{background:rgba(255,201,71,0.06);border:1px solid rgba(255,201,71,0.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;font-size:12px;color:#c9a840;line-height:1.6;font-family:'IBM Plex Mono',monospace}
-
-/* STRATEGY GRID */
-.strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.sg{border:1.5px solid var(--b2);border-radius:8px;padding:12px;cursor:pointer;transition:all 0.2s;background:var(--card)}
-.sg:hover{border-color:var(--yellow);background:rgba(255,201,71,0.06)}
-
-/* POWER METER */
-.power-wrap{margin-bottom:8px}
-.power-track{height:5px;background:var(--b1);border-radius:99px;overflow:hidden;margin-top:8px}
-.power-fill{height:100%;border-radius:99px;transition:width 0.4s ease;background:linear-gradient(90deg,var(--red),var(--orange),var(--yellow),var(--green))}
-
-/* DEAL CARDS */
-.deal-card{background:var(--sf);border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-bottom:12px;transition:border-color 0.15s}
-.deal-card:hover{border-color:var(--b2)}
-.deal-top{display:flex;align-items:flex-start;gap:14px;padding:16px}
-.deal-ico{font-size:28px;flex-shrink:0}
-.deal-info{flex:1}
-.deal-vendor{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:2px}
-.deal-product{font-size:11px;color:var(--mu);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
-.deal-subject{font-size:11px;color:var(--dim);margin-bottom:8px;font-style:italic}
-.deal-chips{display:flex;gap:6px;flex-wrap:wrap}
-.dc{font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:0.5px;font-family:'IBM Plex Mono',monospace}
-.dc-sent{background:rgba(77,158,247,.12);color:var(--blue);border:1px solid rgba(77,158,247,.25)}
-.dc-neg{background:rgba(255,201,71,.1);color:var(--yellow);border:1px solid rgba(255,201,71,.2)}
-.dc-done{background:rgba(0,224,144,.1);color:var(--green);border:1px solid rgba(0,224,144,.2)}
-.deal-prices{text-align:right;flex-shrink:0}
-.dp-orig{font-size:11px;color:var(--mu);text-decoration:line-through;margin-bottom:2px;font-family:'IBM Plex Mono',monospace}
-.dp-current{font-size:22px;font-weight:700;color:var(--green);font-family:'IBM Plex Mono',monospace;line-height:1}
-.dp-save{font-size:10px;color:var(--green);margin-top:2px;font-weight:600}
-.deal-bar{padding:10px 16px;background:var(--card);border-top:1px solid var(--b1);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
-/* EMAIL PREVIEW */
-.email-preview{background:var(--card);border:1px solid var(--b1);border-radius:8px;overflow:hidden;margin-top:12px}
-.ep-header{background:var(--sf);border-bottom:1px solid var(--b1);padding:12px 16px}
-.ep-row{display:flex;gap:8px;font-size:11px;margin-bottom:4px}
-.ep-row:last-child{margin-bottom:0}
-.ep-k{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);min-width:55px}
-.ep-v{color:var(--tx);font-size:11px}
-.ep-body{padding:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mu);line-height:1.8;white-space:pre-wrap;max-height:300px;overflow-y:auto}
-
-/* RESULT CARD */
-.result-card{background:var(--sf);border:1px solid var(--b1);border-radius:10px;padding:20px;margin-bottom:12px;position:relative}
-.result-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0 2px 2px 0}
-.rc-yellow::before{background:var(--yellow)}
-.rc-green::before{background:var(--green)}
-.rc-blue::before{background:var(--blue)}
-.rc-red::before{background:var(--red)}
-.rc-header{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.rc-header::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
-.rc-content{font-size:13px;color:var(--mu);line-height:1.8}
-.rc-big{font-family:'IBM Plex Mono',monospace;font-size:32px;font-weight:700;color:var(--green);letter-spacing:-1px;line-height:1;margin:8px 0}
-.rc-sub{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
-
-/* FORM OVERRIDES */
-div[data-testid="stTextInput"] label,div[data-testid="stTextArea"] label,div[data-testid="stSelectbox"] label,div[data-testid="stNumberInput"] label{
-  color:var(--mu)!important;font-family:'IBM Plex Mono',monospace!important;
-  font-size:9px!important;font-weight:600!important;letter-spacing:2px!important;text-transform:uppercase!important;
+/* ── TOP NAV ── */
+.on-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 36px;
+  border-bottom: 1px solid var(--b1);
+  background: var(--bg);
 }
-div[data-testid="stTextInput"] input,div[data-testid="stNumberInput"] input{
-  background:var(--card)!important;border:1px solid var(--b2)!important;
-  border-radius:8px!important;color:var(--tx)!important;
-  font-family:'IBM Plex Mono',monospace!important;font-size:13px!important;
+.on-logo-wrap { display: flex; align-items: center; gap: 12px; }
+.on-logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #4f9cf9, #a855f7);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
 }
-div[data-testid="stTextArea"] textarea{
-  background:var(--card)!important;border:1px solid var(--b2)!important;
-  border-radius:8px!important;color:var(--tx)!important;
-  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;
+.on-brand {
+  font-size: 20px; font-weight: 700;
+  letter-spacing: -0.5px; color: var(--tx);
 }
-div[data-testid="stSelectbox"] > div > div > div{
-  background:var(--card)!important;border:1px solid var(--b2)!important;
-  border-radius:8px!important;color:var(--tx)!important;
-  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;
+.on-badge {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--b2); border-radius: 20px;
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 1.5px; color: var(--mu);
 }
-div[data-testid="stForm"]{border:none!important;padding:0!important;background:transparent!important}
+.on-badge::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+.on-nav-r {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--mu);
+}
 
-/* PRIMARY BUTTON */
+/* ── HERO ── */
+.hero-label {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--mu); margin-bottom: 16px;
+}
+.hero-label::before {
+  content: 'O'; width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--mu);
+  font-size: 8px; display: flex; align-items: center; justify-content: center;
+}
+.hero-h1 {
+  font-size: 38px; font-weight: 700; line-height: 1.1;
+  letter-spacing: -1px; margin-bottom: 14px;
+}
+.hero-h1 .c-white { color: var(--tx); }
+.hero-h1 .c-blue  { color: var(--blue); }
+.hero-h1 .c-green { color: var(--green); }
+.hero-h1 .c-red   { color: var(--red); }
+
+/* Feature tags */
+.feat-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+.feat-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  border: 1px solid var(--b2); border-radius: 4px;
+  padding: 4px 10px; color: var(--mu);
+  background: var(--sf);
+  letter-spacing: 0.3px;
+}
+
+/* ── STEP TABS ── */
+.steps-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; background: var(--sf);
+  border: 1px solid var(--b1); border-radius: 10px;
+  padding: 4px; margin: 18px 0;
+}
+.step-tab {
+  padding: 10px 6px; text-align: center;
+  border-radius: 8px; cursor: default;
+  transition: all 0.2s;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+}
+.step-tab .st-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--mu);
+}
+.step-tab .st-ico  { font-size: 16px; }
+.step-tab .st-label { font-size: 10px; font-weight: 600; color: var(--mu); }
+.step-tab.active { background: var(--card); border: 1px solid var(--b2); }
+.step-tab.active .st-num { color: var(--blue); }
+.step-tab.active .st-label { color: var(--tx); }
+.step-tab.done .st-num { color: var(--green); }
+.step-tab.done .st-label { color: var(--green); }
+
+/* ── SECTION RULE ── */
+.srule { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.srule-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--mu); white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.srule-title::before {
+  content: ''; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--blue);
+}
+.srule-line { flex: 1; height: 1px; background: var(--b1); }
+
+/* ── AGENT CARDS (Operix style) ── */
+.agent-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--b1);
+  position: relative;
+  transition: background 0.15s;
+}
+.agent-card:hover { background: rgba(255,255,255,0.02); }
+.agent-card::before {
+  content: '';
+  position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.agent-ico {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--b2); flex-shrink: 0;
+}
+.agent-info { flex: 1; }
+.agent-name { font-size: 14px; font-weight: 700; color: var(--tx); margin-bottom: 3px; }
+.agent-desc {
+  font-size: 11px; color: var(--mu);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.agent-badge {
+  padding: 4px 10px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.badge-active { background: rgba(0,224,150,.12); color: var(--green); border: 1px solid rgba(0,224,150,.3); }
+.badge-blue   { background: rgba(79,156,249,.12); color: var(--blue);  border: 1px solid rgba(79,156,249,.3); }
+
+/* ── TIP BOX ── */
+.tip-box {
+  background: rgba(79,156,249,0.07);
+  border: 1px solid rgba(79,156,249,0.2);
+  border-radius: 8px; padding: 12px 16px;
+  margin-bottom: 14px;
+  display: flex; gap: 10px;
+  font-size: 12px; color: #7aabf7;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── POWER METER ── */
+.power-track {
+  height: 5px; background: var(--b1);
+  border-radius: 99px; overflow: hidden; margin-top: 8px;
+}
+.power-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, var(--red), var(--orange), var(--yellow), var(--green));
+}
+
+/* ── EMAIL PREVIEW ── */
+.email-preview {
+  background: var(--card);
+  border: 1px solid var(--b1);
+  border-radius: 8px; overflow: hidden; margin-top: 12px;
+}
+.ep-header {
+  background: var(--sf);
+  border-bottom: 1px solid var(--b1);
+  padding: 12px 16px;
+}
+.ep-row { display: flex; gap: 8px; font-size: 11px; margin-bottom: 4px; }
+.ep-row:last-child { margin-bottom: 0; }
+.ep-k {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--mu); min-width: 55px;
+}
+.ep-v { color: var(--tx); font-size: 11px; }
+.ep-body {
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--mu);
+  line-height: 1.8; white-space: pre-wrap;
+  max-height: 300px; overflow-y: auto;
+}
+
+/* ── RESULT CARDS ── */
+.result-card {
+  background: var(--sf);
+  border: 1px solid var(--b1);
+  border-radius: 10px; padding: 18px; margin-bottom: 12px;
+  position: relative;
+}
+.result-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.rc-yellow::before { background: var(--yellow); }
+.rc-green::before  { background: var(--green); }
+.rc-blue::before   { background: var(--blue); }
+.rc-header {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--mu); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rc-content { font-size: 13px; color: var(--mu); line-height: 1.8; }
+
+/* ── KPI CARDS ── */
+.kpi-card {
+  background: var(--sf);
+  border: 1px solid var(--b1);
+  border-radius: 8px; padding: 14px; margin-bottom: 12px;
+}
+.kpi-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 6px;
+}
+.kpi-val {
+  font-size: 26px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.5px; line-height: 1;
+}
+
+/* ── DEAL CARDS ── */
+.deal-card {
+  background: var(--sf);
+  border: 1px solid var(--b1);
+  border-radius: 10px; overflow: hidden;
+  margin-bottom: 12px;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.deal-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.deal-card:hover { border-color: var(--b2); }
+.deal-top { display: flex; align-items: flex-start; gap: 14px; padding: 16px; }
+.deal-ico { font-size: 26px; flex-shrink: 0; }
+.deal-info { flex: 1; }
+.deal-vendor { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 2px; }
+.deal-product {
+  font-size: 11px; color: var(--mu);
+  font-family: 'JetBrains Mono', monospace; margin-bottom: 6px;
+}
+.deal-subject { font-size: 11px; color: var(--dim); margin-bottom: 8px; font-style: italic; }
+.deal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dc {
+  font-size: 9px; font-weight: 700;
+  padding: 3px 9px; border-radius: 4px;
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dc-sent { background: rgba(79,156,249,.12); color: var(--blue); border: 1px solid rgba(79,156,249,.25); }
+.dc-neg  { background: rgba(245,197,66,.1);  color: var(--yellow); border: 1px solid rgba(245,197,66,.2); }
+.dc-done { background: rgba(0,224,150,.1);   color: var(--green); border: 1px solid rgba(0,224,150,.2); }
+.deal-prices { text-align: right; flex-shrink: 0; }
+.dp-orig {
+  font-size: 11px; color: var(--mu);
+  text-decoration: line-through; margin-bottom: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dp-current {
+  font-size: 22px; font-weight: 700;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+.dp-save { font-size: 10px; color: var(--green); margin-top: 2px; font-weight: 600; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center; padding: 48px 24px;
+  border: 1.5px dashed var(--b1); border-radius: 10px; color: var(--dim);
+}
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+.empty-state h3 { font-size: 14px; font-weight: 600; color: var(--mu); margin-bottom: 4px; }
+.empty-state p { font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── FORM OVERRIDES ── */
+div[data-testid="stTextInput"] label,
+div[data-testid="stTextArea"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stNumberInput"] label {
+  color: var(--mu) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 9px !important; font-weight: 600 !important;
+  letter-spacing: 2px !important; text-transform: uppercase !important;
+}
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input {
+  background: var(--card) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 8px !important; color: var(--tx) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13px !important;
+}
+div[data-testid="stTextArea"] textarea {
+  background: var(--card) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 8px !important; color: var(--tx) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+}
+div[data-testid="stSelectbox"] > div > div > div {
+  background: var(--card) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 8px !important; color: var(--tx) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+}
+div[data-testid="stForm"] { border: none !important; padding: 0 !important; background: transparent !important; }
+
+/* ── PRIMARY BUTTON ── */
 div[data-testid="stFormSubmitButton"] button,
-button[kind="primary"]{
-  background:var(--yellow)!important;border:none!important;border-radius:8px!important;
-  font-family:'IBM Plex Mono',monospace!important;font-size:12px!important;font-weight:700!important;
-  letter-spacing:2px!important;text-transform:uppercase!important;
-  color:#0b0d0f!important;padding:14px 24px!important;width:100%!important;
-  transition:all 0.2s!important;
+button[kind="primary"] {
+  background: var(--blue) !important;
+  border: none !important; border-radius: 8px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important; font-weight: 700 !important;
+  letter-spacing: 2px !important; text-transform: uppercase !important;
+  color: #0d0f14 !important; padding: 14px 24px !important; width: 100% !important;
+  transition: all 0.2s !important;
 }
-div[data-testid="stFormSubmitButton"] button p,button[kind="primary"] p{
-  color:#0b0d0f!important;font-family:'IBM Plex Mono',monospace!important;
-  font-size:12px!important;font-weight:700!important;letter-spacing:2px!important;
+div[data-testid="stFormSubmitButton"] button p,
+button[kind="primary"] p {
+  color: #0d0f14 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important; font-weight: 700 !important; letter-spacing: 2px !important;
 }
-div[data-testid="stFormSubmitButton"] button:hover{filter:brightness(1.1)!important}
+div[data-testid="stFormSubmitButton"] button:hover { filter: brightness(1.15) !important; }
 
-/* SECONDARY BUTTON */
-button[kind="secondary"]{
-  background:transparent!important;border:1px solid var(--b2)!important;border-radius:8px!important;
-  font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;
-  letter-spacing:1.5px!important;text-transform:uppercase!important;
-  color:var(--mu)!important;padding:10px 16px!important;
+/* ── SECONDARY BUTTON ── */
+button[kind="secondary"] {
+  background: transparent !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 8px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important; letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--mu) !important; padding: 10px 16px !important;
 }
-button[kind="secondary"]:hover{border-color:var(--yellow)!important;color:var(--yellow)!important}
-button[kind="secondary"] p{color:inherit!important;font-family:inherit!important;font-size:inherit!important}
+button[kind="secondary"]:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
+button[kind="secondary"] p { color: inherit !important; font-family: inherit !important; font-size: inherit !important; }
 
-div[data-testid="stSpinner"] p{color:var(--mu)!important;font-family:'IBM Plex Mono',monospace!important;font-size:11px!important}
-div[data-testid="stAlert"]{background:rgba(255,71,87,.08)!important;border:1px solid rgba(255,71,87,.25)!important;border-radius:8px!important}
-div[data-testid="stAlert"] p{color:var(--red)!important;font-family:'IBM Plex Mono',monospace!important;font-size:12px!important}
-div[data-testid="stSuccess"]{background:rgba(0,224,144,.06)!important;border:1px solid rgba(0,224,144,.2)!important;border-radius:8px!important}
-div[data-testid="stSuccess"] p{color:var(--green)!important}
-.empty-state{text-align:center;padding:48px 24px;border:1.5px dashed var(--b1);border-radius:10px;color:var(--dim)}
-.empty-state .ei{font-size:40px;margin-bottom:12px;opacity:0.5}
-.empty-state h3{font-size:14px;font-weight:600;color:var(--mu);margin-bottom:4px}
-.empty-state p{font-size:12px;font-family:'IBM Plex Mono',monospace}
+div[data-testid="stSpinner"] p {
+  color: var(--mu) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+}
+div[data-testid="stAlert"] {
+  background: rgba(255,79,94,.08) !important;
+  border: 1px solid rgba(255,79,94,.25) !important;
+  border-radius: 8px !important;
+}
+div[data-testid="stAlert"] p {
+  color: var(--red) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+}
+div[data-testid="stSuccess"] {
+  background: rgba(0,224,150,.06) !important;
+  border: 1px solid rgba(0,224,150,.2) !important;
+  border-radius: 8px !important;
+}
+div[data-testid="stSuccess"] p { color: var(--green) !important; }
 </style>
 
-<div class="n-nav">
-  <div class="n-nav-l">
-    <div class="n-logo">🤝</div>
-    <div class="n-brand">Negotiator<span>AI</span></div>
-    <div class="n-badge">AI PROCUREMENT AGENT</div>
+<!-- TOP NAV -->
+<div class="on-nav">
+  <div class="on-logo-wrap">
+    <div class="on-logo">🤝</div>
+    <div class="on-brand">Negotiator<span style="color:var(--blue)">AI</span></div>
+    <div class="on-badge">AI PROCUREMENT AGENT</div>
   </div>
-  <div class="n-nav-r">Llama 3.3 70B · Groq · 4-Step Wizard</div>
+  <div class="on-nav-r">Groq · LLaMA 3.3 70B · 4-Step Wizard</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -222,22 +493,27 @@ div[data-testid="stSuccess"] p{color:var(--green)!important}
 left, right = st.columns([1.1, 2])
 
 with left:
-    st.markdown("<div style='padding:20px 16px 0'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:24px 16px 0'>", unsafe_allow_html=True)
 
-    # Hero
+    # Hero — Operix style
     st.markdown("""
-    <div style='margin-bottom:20px'>
-      <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:8px'>
-        <span style='color:var(--yellow)'>○</span> Autonomous Deal Negotiation
+    <div style='margin-bottom:18px'>
+      <div class="hero-label">AI-Powered Procurement Negotiation</div>
+      <div class="hero-h1">
+        <span class="c-white">One Tool.</span><br>
+        <span class="c-blue">Negotiate.</span><br>
+        <span class="c-green">Save More.</span>
       </div>
-      <div style='font-size:34px;font-weight:700;line-height:1.1;letter-spacing:-1px;margin-bottom:10px'>
-        <span style='color:var(--tx)'>Your AI That</span><br>
-        <span style='color:var(--yellow)'>Fights For</span><br>
-        <span style='color:var(--green)'>Best Price.</span>
-      </div>
-      <p style='font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:12px'>
-        Fill your deal details → AI crafts a killer negotiation email → Handle vendor replies automatically until you close at your target price.
+      <p style='font-size:13px;color:var(--mu);line-height:1.75;margin-bottom:12px'>
+        NegotiatorAI detects the best leverage, crafts killer emails, and handles vendor replies automatically — until you close at your target price.
       </p>
+      <div class="feat-tags">
+        <span class="feat-tag">Email Crafter</span>
+        <span class="feat-tag">Reply Handler</span>
+        <span class="feat-tag">Power Analyser</span>
+        <span class="feat-tag">Leverage Max</span>
+        <span class="feat-tag">Deal Closer</span>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -247,12 +523,29 @@ with left:
         if n == s: return "active"
         if n < s: return "done"
         return ""
+
     st.markdown(f"""
     <div class="steps-bar">
-      <div class="step-tab {tab_cls(1)}"><span class="st-num">Step 01</span><span class="st-ico">🔧</span><span class="st-label">Setup</span></div>
-      <div class="step-tab {tab_cls(2)}"><span class="st-num">Step 02</span><span class="st-ico">📋</span><span class="st-label">Deal Info</span></div>
-      <div class="step-tab {tab_cls(3)}"><span class="st-num">Step 03</span><span class="st-ico">⚔️</span><span class="st-label">Strategy</span></div>
-      <div class="step-tab {tab_cls(4)}"><span class="st-num">Step 04</span><span class="st-ico">🚀</span><span class="st-label">Send & Track</span></div>
+      <div class="step-tab {tab_cls(1)}">
+        <span class="st-num">01</span>
+        <span class="st-ico">🔧</span>
+        <span class="st-label">Setup</span>
+      </div>
+      <div class="step-tab {tab_cls(2)}">
+        <span class="st-num">02</span>
+        <span class="st-ico">📋</span>
+        <span class="st-label">Deal Info</span>
+      </div>
+      <div class="step-tab {tab_cls(3)}">
+        <span class="st-num">03</span>
+        <span class="st-ico">⚔️</span>
+        <span class="st-label">Strategy</span>
+      </div>
+      <div class="step-tab {tab_cls(4)}">
+        <span class="st-num">04</span>
+        <span class="st-ico">🚀</span>
+        <span class="st-label">Track</span>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -260,7 +553,7 @@ with left:
     if s == 1:
         st.markdown("""
         <div class="srule"><div class="srule-title">Configuration</div><div class="srule-line"></div></div>
-        <div class="tip-box">💡 &nbsp;<span><strong style='color:var(--yellow)'>Required:</strong> Add your Groq API key to generate real negotiation emails. Get one free at console.groq.com</span></div>
+        <div class="tip-box">💡 &nbsp;<span><strong style='color:var(--blue)'>Required:</strong> Add your Groq API key to generate negotiation emails. Get one free at console.groq.com</span></div>
         """, unsafe_allow_html=True)
         with st.form("form_step1"):
             api_key = st.text_input("Groq API Key ✱", placeholder="gsk_...", type="password",
@@ -300,8 +593,7 @@ with left:
             with c2: qty = st.text_input("Quantity", placeholder="50 units, 500 kg...",
                                           value=st.session_state.get("n_qty",""))
             with c3: delivery = st.selectbox("Delivery Needed",
-                ["Immediately / ASAP","Within 2 weeks","Within 1 month","Within 3 months","Flexible"],
-                index=2)
+                ["Immediately / ASAP","Within 2 weeks","Within 1 month","Within 3 months","Flexible"], index=2)
             c1, c2, c3 = st.columns(3)
             with c1: quoted = st.text_input("Vendor's Quoted Price ✱", placeholder="₹5,00,000",
                                              value=st.session_state.get("n_quoted",""))
@@ -342,14 +634,10 @@ with left:
             ("🎁","Bundle Deal","Package multiple items","bundle multiple products for total deal"),
         ]
         saved_strat = st.session_state.get("n_strategy","bulk volume discount")
-        cols = st.columns(3)
-        chosen_strat = saved_strat
-        # Use radio for strategy selection (rendered as custom HTML display + hidden selectbox)
         strat_names = [f"{s[0]} {s[1]}" for s in strats]
         strat_values = [s[3] for s in strats]
-        strat_descs = [s[2] for s in strats]
 
-        st.markdown("""<div style='font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:10px'>Primary Strategy</div>""", unsafe_allow_html=True)
+        st.markdown("""<div style='font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:10px'>Primary Strategy</div>""", unsafe_allow_html=True)
         strat_choice = st.radio("", strat_names, horizontal=False,
                                  index=strat_values.index(saved_strat) if saved_strat in strat_values else 0,
                                  label_visibility="collapsed")
@@ -375,13 +663,13 @@ with left:
             if st.session_state.get("n_comp",""): power += 15
             if st.session_state.get("n_budget",""): power += 5
 
-            pcolor = "#ff4757" if power < 25 else "#ff6b35" if power < 50 else "#ffc947" if power < 75 else "#00e090"
-            plabel = "Weak" if power < 25 else "Building" if power < 50 else "Strong 💪" if power < 75 else "Maximum Power 🔥"
+            pcolor = "#ff4f5e" if power < 25 else "#ff6b35" if power < 50 else "#f5c542" if power < 75 else "#00e096"
+            plabel = "Weak" if power < 25 else "Building" if power < 50 else "Strong 💪" if power < 75 else "Maximum 🔥"
             st.markdown(f"""
-            <div class="power-wrap">
+            <div style='margin-bottom:8px'>
               <div style='display:flex;justify-content:space-between;margin-bottom:6px'>
-                <span style='font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu)'>Negotiation Power</span>
-                <span style='font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;color:{pcolor}'>{power}% {plabel}</span>
+                <span style='font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mu)'>Negotiation Power</span>
+                <span style='font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:{pcolor}'>{power}% {plabel}</span>
               </div>
               <div class="power-track"><div class="power-fill" style="width:{power}%"></div></div>
             </div>
@@ -389,7 +677,7 @@ with left:
 
             c1b, c2b = st.columns(2)
             with c1b: back3 = st.form_submit_button("← Back")
-            with c2b: go3 = st.form_submit_button("🚀  Generate & Send Email")
+            with c2b: go3 = st.form_submit_button("🚀  Generate Email")
 
         if back3:
             st.session_state.step = 2; st.rerun()
@@ -402,7 +690,6 @@ with left:
                 st.session_state.n_context = context
                 st.session_state.n_strategy = chosen_strat
 
-                # ── CALL GROQ API ──────────────────────────────────────────
                 v = st.session_state
                 SYS = """You are an elite procurement negotiation AI agent. Write devastatingly effective negotiation emails.
 Rules:
@@ -431,7 +718,7 @@ Leverage:
 
 Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}."""
 
-                with st.spinner("Llama 3.3 70B crafting your negotiation email..."):
+                with st.spinner("LLaMA 3.3 70B crafting your negotiation email..."):
                     try:
                         raw = call_groq(v.cfg_api, [
                             {"role":"system","content":SYS},
@@ -445,7 +732,6 @@ Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}.""
                         st.session_state.result = result
                         st.session_state.error = None
 
-                        # Save deal
                         import time
                         deal = {
                             "id": int(time.time()*1000),
@@ -477,56 +763,89 @@ Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}.""
 
 # ── RIGHT PANEL ───────────────────────────────────────────────────────────────
 with right:
-    st.markdown("<div style='padding:20px 20px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 73px)'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:24px 20px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 69px)'>", unsafe_allow_html=True)
 
     s = st.session_state.step
 
     if s == 1:
-        # Show agent module cards
+        # Operix-style agent cards
         st.markdown("""
-        <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--mu);text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:4px'>Negotiation Modules — 5 Active</div>
+        <div style='font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:600;letter-spacing:3px;
+        color:var(--mu);text-transform:uppercase;padding-bottom:14px;
+        border-bottom:1px solid var(--b1);margin-bottom:4px'>
+          Negotiation Agents — 5 Active
+        </div>
         """, unsafe_allow_html=True)
-        modules = [
-            ("mc-yellow","📝","Email Crafter","Writes devastating negotiation emails tailored to your leverage","ACTIVE"),
-            ("mc-green","🔄","Reply Handler","Reads vendor responses and auto-generates counter-offers","ACTIVE"),
-            ("mc-blue","📊","Power Analyser","Scores your negotiation strength and suggests improvements","ACTIVE"),
-            ("mc-red","⚔️","Leverage Maximiser","Extracts every advantage from your context data","ACTIVE"),
-            ("mc-orange","🏆","Deal Closer","Knows when to push harder and when to close","ACTIVE"),
+
+        agents = [
+            ("#4f9cf9", "📝", "Email Crafter",    "Writes devastating negotiation emails tailored to your leverage"),
+            ("#00e096", "🔄", "Reply Handler",     "Reads vendor responses and auto-generates counter-offers"),
+            ("#f5c542", "📊", "Power Analyser",    "Scores your negotiation strength and suggests improvements"),
+            ("#ff4f5e", "⚔️", "Leverage Maximiser","Extracts every advantage from your context data"),
+            ("#a855f7", "🏆", "Deal Closer",       "Knows when to push harder and when to close"),
         ]
-        colors = {"mc-yellow":"var(--yellow)","mc-green":"var(--green)","mc-blue":"var(--blue)","mc-red":"var(--red)","mc-orange":"var(--orange)"}
-        for cls, ico, name, desc, status in modules:
-            c = colors[cls]
+        for color, ico, name, desc in agents:
             st.markdown(f"""
-            <div style='display:flex;align-items:center;gap:14px;padding:14px;border-bottom:1px solid var(--b1);position:relative'>
-              <div style='position:absolute;left:0;top:0;bottom:0;width:3px;background:{c};border-radius:0 2px 2px 0'></div>
-              <div style='width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.04);border:1px solid var(--b2);flex-shrink:0'>{ico}</div>
-              <div style='flex:1'>
-                <div style='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px'>{name}</div>
-                <div style='font-size:11px;color:var(--mu);font-family:"IBM Plex Mono",monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>{desc}</div>
+            <div class="agent-card" style="--ac:{color}">
+              <style>.agent-card[style*="{color}"]::before{{background:{color}}}</style>
+              <div class="agent-ico" style="border-color:{color}33">{ico}</div>
+              <div class="agent-info">
+                <div class="agent-name">{name}</div>
+                <div class="agent-desc">{desc}</div>
               </div>
-              <span style='padding:4px 10px;border-radius:3px;background:rgba(0,224,144,.15);color:var(--green);border:1px solid rgba(0,224,144,.3);font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0'>{status}</span>
+              <span class="agent-badge badge-active">ACTIVE</span>
             </div>
             """, unsafe_allow_html=True)
 
-    elif s in [2, 3]:
-        # Show deal preview / instructions
+        # Bottom stat strip (Operix style)
         st.markdown("""
-        <div style='font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--mu);text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:16px'>How It Works</div>
+        <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+        border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-top:20px'>
+          <div style='padding:18px;border-right:1px solid var(--b1);text-align:center'>
+            <div style='font-size:32px;font-weight:700;color:var(--blue);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>5</div>
+            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Agents</div>
+          </div>
+          <div style='padding:18px;border-right:1px solid var(--b1);text-align:center'>
+            <div style='font-size:32px;font-weight:700;color:var(--green);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>AI</div>
+            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Powered</div>
+          </div>
+          <div style='padding:18px;text-align:center'>
+            <div style='font-size:32px;font-weight:700;color:var(--yellow);font-family:"JetBrains Mono",monospace;letter-spacing:-2px'>4s</div>
+            <div style='font-size:10px;color:var(--mu);font-family:"JetBrains Mono",monospace;letter-spacing:1px;text-transform:uppercase;margin-top:4px'>Avg Speed</div>
+          </div>
+        </div>
         """, unsafe_allow_html=True)
-        steps = [
-            ("1","Fill deal details","Enter vendor info, quoted price and your target in Step 2"),
-            ("2","Choose strategy","Pick the negotiation angle that fits your situation in Step 3"),
-            ("3","Add leverage","The more leverage points you list, the stronger your email"),
-            ("4","AI generates email","Llama 3.3 70B on Groq writes a powerful negotiation email"),
-            ("5","Handle replies","Paste vendor replies and AI auto-crafts the perfect counter"),
+
+    elif s in [2, 3]:
+        st.markdown("""
+        <div style='font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:600;
+        letter-spacing:3px;color:var(--mu);text-transform:uppercase;
+        padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:16px'>
+          How It Works
+        </div>
+        """, unsafe_allow_html=True)
+
+        steps_info = [
+            ("#4f9cf9","1","Fill deal details",   "Enter vendor info, quoted price and your target in Step 2"),
+            ("#00e096","2","Choose strategy",      "Pick the negotiation angle that fits your situation in Step 3"),
+            ("#f5c542","3","Add leverage",         "The more leverage points you list, the stronger your email"),
+            ("#a855f7","4","AI generates email",   "LLaMA 3.3 70B on Groq writes a powerful negotiation email"),
+            ("#ff4f5e","5","Handle replies",        "Paste vendor replies and AI auto-crafts the perfect counter"),
         ]
-        for num, title, desc in steps:
+        for color, num, title, desc in steps_info:
             st.markdown(f"""
-            <div style='display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--b1)'>
-              <div style='width:28px;height:28px;border-radius:50%;background:var(--card);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;color:var(--yellow);flex-shrink:0'>{num}</div>
+            <div style='display:flex;align-items:flex-start;gap:12px;padding:14px 0;
+            border-bottom:1px solid var(--b1);position:relative'>
+              <div style='position:absolute;left:0;top:0;bottom:0;width:3px;
+              background:{color};border-radius:0 2px 2px 0'></div>
+              <div style='margin-left:12px;width:28px;height:28px;border-radius:50%;
+              background:var(--card);border:1px solid {color}44;
+              display:flex;align-items:center;justify-content:center;
+              font-family:"JetBrains Mono",monospace;font-size:11px;
+              font-weight:700;color:{color};flex-shrink:0'>{num}</div>
               <div>
                 <div style='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px'>{title}</div>
-                <div style='font-size:11px;color:var(--mu);font-family:"IBM Plex Mono",monospace;line-height:1.6'>{desc}</div>
+                <div style='font-size:11px;color:var(--mu);font-family:"JetBrains Mono",monospace;line-height:1.6'>{desc}</div>
               </div>
             </div>
             """, unsafe_allow_html=True)
@@ -535,49 +854,45 @@ with right:
         result = st.session_state.get("result")
         deals = st.session_state.get("deals", [])
 
-        # Show latest email result
         if result:
             st.markdown("""
-            <div style='display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:14px'>
+            <div style='display:flex;align-items:center;justify-content:space-between;
+            padding-bottom:14px;border-bottom:1px solid var(--b1);margin-bottom:14px'>
               <span style='font-size:16px;font-weight:700;color:var(--tx)'>Email Generated</span>
-              <span style='padding:5px 12px;background:rgba(0,224,144,.12);border:1px solid rgba(0,224,144,.3);border-radius:3px;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--green)'>✓ Ready</span>
+              <span style='padding:5px 12px;background:rgba(0,224,150,.12);
+              border:1px solid rgba(0,224,150,.3);border-radius:4px;
+              font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;
+              letter-spacing:2px;text-transform:uppercase;color:var(--green)'>✓ READY</span>
             </div>
             """, unsafe_allow_html=True)
 
-            # KPI row
             conf = result.get("confidence", 72)
             pct = fmt_pct(st.session_state.get("n_quoted",""), st.session_state.get("n_target",""))
             c1, c2, c3 = st.columns(3)
             for col, label, val, color in [
                 (c1, "Target Price", st.session_state.get("n_target","—"), "var(--green)"),
-                (c2, "Confidence", f"{conf}%", "var(--yellow)"),
-                (c3, "Reduction", pct or "—", "var(--blue)"),
+                (c2, "Confidence",   f"{conf}%",                           "var(--blue)"),
+                (c3, "Reduction",    pct or "—",                           "var(--yellow)"),
             ]:
                 with col:
                     st.markdown(f"""
-                    <div style='background:var(--sf);border:1px solid var(--b1);border-radius:8px;padding:14px;margin-bottom:12px'>
-                      <div style='font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:6px'>{label}</div>
-                      <div style='font-size:22px;font-weight:700;color:{color};font-family:"IBM Plex Mono",monospace;letter-spacing:-0.5px;line-height:1'>{val}</div>
+                    <div class="kpi-card">
+                      <div class="kpi-label">{label}</div>
+                      <div class="kpi-val" style="color:{color}">{val}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Reasoning
             st.markdown(f"""
             <div class="result-card rc-yellow">
               <div class="rc-header" style="color:var(--yellow)">Why This Will Work</div>
               <div class="rc-content">{result.get("reasoning","")}</div>
             </div>
-            """, unsafe_allow_html=True)
-
-            # Predicted response
-            st.markdown(f"""
             <div class="result-card rc-blue">
               <div class="rc-header" style="color:var(--blue)">Predicted Vendor Response</div>
               <div class="rc-content">{result.get("predicted_response","")}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            # Email preview
             v = st.session_state
             st.markdown(f"""
             <div class="email-preview">
@@ -592,7 +907,7 @@ with right:
 
             st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-        # ── DEAL TRACKER ──────────────────────────────────────────────────────
+        # Deal Tracker
         st.markdown("""<div class="srule"><div class="srule-title">Deal Tracker</div><div class="srule-line"></div></div>""", unsafe_allow_html=True)
 
         if not deals:
@@ -604,6 +919,7 @@ with right:
             </div>
             """, unsafe_allow_html=True)
         else:
+            deal_colors = {"sent":"#4f9cf9","negotiating":"#f5c542","closed":"#00e096"}
             for deal in deals:
                 status = deal.get("status","sent")
                 ico = "📤" if status=="sent" else "🔄" if status=="negotiating" else "🏆"
@@ -611,9 +927,11 @@ with right:
                 badge_label = "Email Sent" if status=="sent" else f"Negotiating · Round {deal.get('rounds',0)}" if status=="negotiating" else "Deal Closed"
                 display_price = deal.get("finalPrice") or deal.get("predicted") or deal.get("target","")
                 pct_str = fmt_pct(deal.get("quoted",""), display_price)
+                dc = deal_colors.get(status, "#4f9cf9")
 
                 st.markdown(f"""
-                <div class="deal-card">
+                <div class="deal-card" style="--dc:{dc}">
+                  <style>.deal-card[style*="{dc}"]::before{{background:{dc}}}</style>
                   <div class="deal-top">
                     <div class="deal-ico">{ico}</div>
                     <div class="deal-info">
@@ -631,7 +949,6 @@ with right:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Handle Reply
                 if status != "closed":
                     col_a, col_b = st.columns(2)
                     with col_a:
@@ -644,16 +961,21 @@ with right:
                             deal["finalPrice"] = deal.get("predicted") or deal["target"]
                             st.rerun()
 
-            # Handle reply flow
             if st.session_state.handle_reply_id:
                 deal_id = st.session_state.handle_reply_id
                 deal = next((d for d in deals if d["id"] == deal_id), None)
                 if deal:
-                    st.markdown(f"""<div style='background:rgba(77,158,247,0.06);border:1px solid rgba(77,158,247,0.2);border-radius:8px;padding:14px;margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--blue)'>
-                    Paste vendor reply for <strong style='color:var(--tx)'>{deal['vendor']}</strong> below:</div>""", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style='background:rgba(79,156,249,0.06);border:1px solid rgba(79,156,249,0.2);
+                    border-radius:8px;padding:14px;margin-top:12px;
+                    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--blue)'>
+                      Paste vendor reply for <strong style='color:var(--tx)'>{deal['vendor']}</strong> below:
+                    </div>
+                    """, unsafe_allow_html=True)
 
                     with st.form(f"reply_form_{deal_id}"):
-                        vendor_reply = st.text_area("Vendor's Reply Email", placeholder="Paste their full response here...", height=120)
+                        vendor_reply = st.text_area("Vendor's Reply Email",
+                            placeholder="Paste their full response here...", height=120)
                         c1r, c2r = st.columns(2)
                         with c1r: cancel_reply = st.form_submit_button("Cancel")
                         with c2r: send_reply = st.form_submit_button("🤖 Generate Counter-Offer")
@@ -692,7 +1014,6 @@ Write strongest counter-response toward {deal['target']}. Sign as {deal['myName'
                                              "analysis":"Vendor is open to negotiation.",
                                              "new_predicted_price":deal["target"],
                                              "confidence":70,"recommendation":"push more"}
-
                                     deal["status"] = "negotiating"
                                     deal["predicted"] = r.get("new_predicted_price", deal["target"])
                                     deal["rounds"] = deal.get("rounds",0) + 1
