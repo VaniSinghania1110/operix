@@ -50,8 +50,8 @@ def fmt_pct(quoted, target):
     return ""
 
 # ── Global CSS — Operix-style ─────────────────────────────────────────────────
+# ── Clean Global CSS ─────────────────────────────────────────────────────────
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #0d0f14;
@@ -61,16 +61,10 @@ st.markdown("""
   --b2: #252c3d;
   --tx: #e4e9f4;
   --mu: #5a6480;
-  --dim: #2e3650;
-
   --blue: #4f9cf9;
   --green: #00e096;
   --red: #ff4f5e;
-  --orange: #ff6b35;
   --yellow: #f5c542;
-  --teal: #00cfc8;
-  --purple: #a855f7;
-  --pink: #ec4899;
 }
 
 html, body, .stApp,
@@ -78,414 +72,104 @@ html, body, .stApp,
 [data-testid="stMain"] {
   background: var(--bg) !important;
   color: var(--tx) !important;
-  font-family: 'Space Grotesk', sans-serif !important;
+  font-family: Arial, sans-serif !important;
 }
 
 header[data-testid="stHeader"],
 footer,
 [data-testid="stToolbar"],
-[data-testid="stDecoration"] { display: none !important; }
+[data-testid="stDecoration"] {
+  display: none !important;
+}
 
-.block-container { padding: 0 !important; max-width: 100% !important; }
+.block-container {
+  padding: 0 !important;
+  max-width: 100% !important;
+}
 
-/* ── TOP NAV ── */
 .on-nav {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 16px 36px;
   border-bottom: 1px solid var(--b1);
   background: var(--bg);
 }
-.on-logo-wrap { display: flex; align-items: center; gap: 12px; }
+
+.on-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .on-logo {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, #4f9cf9, #a855f7);
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  background: linear-gradient(135deg,#4f9cf9,#a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .on-brand {
-  font-size: 20px; font-weight: 700;
-  letter-spacing: -0.5px; color: var(--tx);
+  font-size: 20px;
+  font-weight: 700;
 }
+
 .on-badge {
-  display: flex; align-items: center; gap: 6px;
-  border: 1px solid var(--b2); border-radius: 20px;
   padding: 4px 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 1.5px; color: var(--mu);
-}
-.on-badge::before {
-  content: '';
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-}
-.on-nav-r {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; color: var(--mu);
-}
-
-/* ── HERO ── */
-.hero-label {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--mu); margin-bottom: 16px;
-}
-.hero-label::before {
-  content: 'O'; width: 14px; height: 14px; border-radius: 50%;
-  border: 1.5px solid var(--mu);
-  font-size: 8px; display: flex; align-items: center; justify-content: center;
-}
-.hero-h1 {
-  font-size: 38px; font-weight: 700; line-height: 1.1;
-  letter-spacing: -1px; margin-bottom: 14px;
-}
-.hero-h1 .c-white { color: var(--tx); }
-.hero-h1 .c-blue  { color: var(--blue); }
-.hero-h1 .c-green { color: var(--green); }
-.hero-h1 .c-red   { color: var(--red); }
-
-/* Feature tags */
-.feat-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
-.feat-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; font-weight: 500;
-  border: 1px solid var(--b2); border-radius: 4px;
-  padding: 4px 10px; color: var(--mu);
-  background: var(--sf);
-  letter-spacing: 0.3px;
-}
-
-/* ── STEP TABS ── */
-.steps-bar {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 0; background: var(--sf);
-  border: 1px solid var(--b1); border-radius: 10px;
-  padding: 4px; margin: 18px 0;
-}
-.step-tab {
-  padding: 10px 6px; text-align: center;
-  border-radius: 8px; cursor: default;
-  transition: all 0.2s;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 3px;
-}
-.step-tab .st-num {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--b2);
+  border-radius: 20px;
+  font-size: 10px;
   color: var(--mu);
 }
-.step-tab .st-ico  { font-size: 16px; }
-.step-tab .st-label { font-size: 10px; font-weight: 600; color: var(--mu); }
-.step-tab.active { background: var(--card); border: 1px solid var(--b2); }
-.step-tab.active .st-num { color: var(--blue); }
-.step-tab.active .st-label { color: var(--tx); }
-.step-tab.done .st-num { color: var(--green); }
-.step-tab.done .st-label { color: var(--green); }
 
-/* ── SECTION RULE ── */
-.srule { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.srule-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 2.5px; text-transform: uppercase;
-  color: var(--mu); white-space: nowrap;
-  display: flex; align-items: center; gap: 8px;
-}
-.srule-title::before {
-  content: ''; width: 4px; height: 4px;
-  border-radius: 50%; background: var(--blue);
-}
-.srule-line { flex: 1; height: 1px; background: var(--b1); }
-
-/* ── AGENT CARDS (Operix style) ── */
-.agent-card {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--b1);
-  position: relative;
-  transition: background 0.15s;
-}
-.agent-card:hover { background: rgba(255,255,255,0.02); }
-.agent-card::before {
-  content: '';
-  position: absolute; left: 0; top: 8px; bottom: 8px;
-  width: 3px; border-radius: 0 2px 2px 0;
-}
-.agent-ico {
-  width: 44px; height: 44px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--b2); flex-shrink: 0;
-}
-.agent-info { flex: 1; }
-.agent-name { font-size: 14px; font-weight: 700; color: var(--tx); margin-bottom: 3px; }
-.agent-desc {
-  font-size: 11px; color: var(--mu);
-  font-family: 'JetBrains Mono', monospace;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.agent-badge {
-  padding: 4px 10px; border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  flex-shrink: 0;
-}
-.badge-active { background: rgba(0,224,150,.12); color: var(--green); border: 1px solid rgba(0,224,150,.3); }
-.badge-blue   { background: rgba(79,156,249,.12); color: var(--blue);  border: 1px solid rgba(79,156,249,.3); }
-
-/* ── TIP BOX ── */
-.tip-box {
-  background: rgba(79,156,249,0.07);
-  border: 1px solid rgba(79,156,249,0.2);
-  border-radius: 8px; padding: 12px 16px;
-  margin-bottom: 14px;
-  display: flex; gap: 10px;
-  font-size: 12px; color: #7aabf7;
-  line-height: 1.6;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ── POWER METER ── */
-.power-track {
-  height: 5px; background: var(--b1);
-  border-radius: 99px; overflow: hidden; margin-top: 8px;
-}
-.power-fill {
-  height: 100%; border-radius: 99px;
-  transition: width 0.4s ease;
-  background: linear-gradient(90deg, var(--red), var(--orange), var(--yellow), var(--green));
-}
-
-/* ── EMAIL PREVIEW ── */
-.email-preview {
-  background: var(--card);
-  border: 1px solid var(--b1);
-  border-radius: 8px; overflow: hidden; margin-top: 12px;
-}
-.ep-header {
-  background: var(--sf);
-  border-bottom: 1px solid var(--b1);
-  padding: 12px 16px;
-}
-.ep-row { display: flex; gap: 8px; font-size: 11px; margin-bottom: 4px; }
-.ep-row:last-child { margin-bottom: 0; }
-.ep-k {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--mu); min-width: 55px;
-}
-.ep-v { color: var(--tx); font-size: 11px; }
-.ep-body {
-  padding: 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; color: var(--mu);
-  line-height: 1.8; white-space: pre-wrap;
-  max-height: 300px; overflow-y: auto;
-}
-
-/* ── RESULT CARDS ── */
-.result-card {
-  background: var(--sf);
-  border: 1px solid var(--b1);
-  border-radius: 10px; padding: 18px; margin-bottom: 12px;
-  position: relative;
-}
-.result-card::before {
-  content: ''; position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px; border-radius: 0 2px 2px 0;
-}
-.rc-yellow::before { background: var(--yellow); }
-.rc-green::before  { background: var(--green); }
-.rc-blue::before   { background: var(--blue); }
-.rc-header {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: 2.5px; text-transform: uppercase;
-  color: var(--mu); margin-bottom: 10px;
-  display: flex; align-items: center; gap: 6px;
-}
-.rc-content { font-size: 13px; color: var(--mu); line-height: 1.8; }
-
-/* ── KPI CARDS ── */
-.kpi-card {
-  background: var(--sf);
-  border: 1px solid var(--b1);
-  border-radius: 8px; padding: 14px; margin-bottom: 12px;
-}
-.kpi-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--mu); margin-bottom: 6px;
-}
-.kpi-val {
-  font-size: 26px; font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: -0.5px; line-height: 1;
-}
-
-/* ── DEAL CARDS ── */
+.kpi-card,
+.result-card,
 .deal-card {
   background: var(--sf);
   border: 1px solid var(--b1);
-  border-radius: 10px; overflow: hidden;
+  border-radius: 10px;
+  padding: 16px;
   margin-bottom: 12px;
-  transition: border-color 0.15s;
-  position: relative;
 }
-.deal-card::before {
-  content: ''; position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-}
-.deal-card:hover { border-color: var(--b2); }
-.deal-top { display: flex; align-items: flex-start; gap: 14px; padding: 16px; }
-.deal-ico { font-size: 26px; flex-shrink: 0; }
-.deal-info { flex: 1; }
-.deal-vendor { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 2px; }
-.deal-product {
-  font-size: 11px; color: var(--mu);
-  font-family: 'JetBrains Mono', monospace; margin-bottom: 6px;
-}
-.deal-subject { font-size: 11px; color: var(--dim); margin-bottom: 8px; font-style: italic; }
-.deal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.dc {
-  font-size: 9px; font-weight: 700;
-  padding: 3px 9px; border-radius: 4px;
-  letter-spacing: 0.5px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.dc-sent { background: rgba(79,156,249,.12); color: var(--blue); border: 1px solid rgba(79,156,249,.25); }
-.dc-neg  { background: rgba(245,197,66,.1);  color: var(--yellow); border: 1px solid rgba(245,197,66,.2); }
-.dc-done { background: rgba(0,224,150,.1);   color: var(--green); border: 1px solid rgba(0,224,150,.2); }
-.deal-prices { text-align: right; flex-shrink: 0; }
-.dp-orig {
-  font-size: 11px; color: var(--mu);
-  text-decoration: line-through; margin-bottom: 2px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.dp-current {
-  font-size: 22px; font-weight: 700;
-  color: var(--green);
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1;
-}
-.dp-save { font-size: 10px; color: var(--green); margin-top: 2px; font-weight: 600; }
 
-/* ── EMPTY STATE ── */
-.empty-state {
-  text-align: center; padding: 48px 24px;
-  border: 1.5px dashed var(--b1); border-radius: 10px; color: var(--dim);
+.hero-h1 {
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.1;
 }
-.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
-.empty-state h3 { font-size: 14px; font-weight: 600; color: var(--mu); margin-bottom: 4px; }
-.empty-state p { font-size: 12px; font-family: 'JetBrains Mono', monospace; }
 
-/* ── FORM OVERRIDES ── */
-div[data-testid="stTextInput"] label,
-div[data-testid="stTextArea"] label,
-div[data-testid="stSelectbox"] label,
-div[data-testid="stNumberInput"] label {
-  color: var(--mu) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 9px !important; font-weight: 600 !important;
-  letter-spacing: 2px !important; text-transform: uppercase !important;
+.hero-label {
+  font-size: 10px;
+  color: var(--mu);
+  margin-bottom: 10px;
 }
-div[data-testid="stTextInput"] input,
-div[data-testid="stNumberInput"] input {
-  background: var(--card) !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 8px !important; color: var(--tx) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 13px !important;
-}
-div[data-testid="stTextArea"] textarea {
-  background: var(--card) !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 8px !important; color: var(--tx) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-}
-div[data-testid="stSelectbox"] > div > div > div {
-  background: var(--card) !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 8px !important; color: var(--tx) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-}
-div[data-testid="stForm"] { border: none !important; padding: 0 !important; background: transparent !important; }
 
-/* ── PRIMARY BUTTON ── */
-div[data-testid="stFormSubmitButton"] button,
-button[kind="primary"] {
-  background: var(--blue) !important;
-  border: none !important; border-radius: 8px !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 11px !important; font-weight: 700 !important;
-  letter-spacing: 2px !important; text-transform: uppercase !important;
-  color: #0d0f14 !important; padding: 14px 24px !important; width: 100% !important;
-  transition: all 0.2s !important;
+.feat-tag {
+  border: 1px solid var(--b2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--mu);
+  display: inline-block;
+  margin-right: 5px;
 }
-div[data-testid="stFormSubmitButton"] button p,
-button[kind="primary"] p {
-  color: #0d0f14 !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 11px !important; font-weight: 700 !important; letter-spacing: 2px !important;
-}
-div[data-testid="stFormSubmitButton"] button:hover { filter: brightness(1.15) !important; }
-
-/* ── SECONDARY BUTTON ── */
-button[kind="secondary"] {
-  background: transparent !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 8px !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 10px !important; letter-spacing: 1.5px !important;
-  text-transform: uppercase !important;
-  color: var(--mu) !important; padding: 10px 16px !important;
-}
-button[kind="secondary"]:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
-button[kind="secondary"] p { color: inherit !important; font-family: inherit !important; font-size: inherit !important; }
-
-div[data-testid="stSpinner"] p {
-  color: var(--mu) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 11px !important;
-}
-div[data-testid="stAlert"] {
-  background: rgba(255,79,94,.08) !important;
-  border: 1px solid rgba(255,79,94,.25) !important;
-  border-radius: 8px !important;
-}
-div[data-testid="stAlert"] p {
-  color: var(--red) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-}
-div[data-testid="stSuccess"] {
-  background: rgba(0,224,150,.06) !important;
-  border: 1px solid rgba(0,224,150,.2) !important;
-  border-radius: 8px !important;
-}
-div[data-testid="stSuccess"] p { color: var(--green) !important; }
 </style>
+""", unsafe_allow_html=True)
 
-<!-- TOP NAV -->
+# ── Top Navbar ───────────────────────────────────────────────────────────────
+st.markdown("""
 <div class="on-nav">
   <div class="on-logo-wrap">
     <div class="on-logo">🤝</div>
-    <div class="on-brand">Negotiator<span style="color:var(--blue)">AI</span></div>
+    <div class="on-brand">Negotiator<span style="color:#4f9cf9">AI</span></div>
     <div class="on-badge">AI PROCUREMENT AGENT</div>
   </div>
-  <div class="on-nav-r">Groq · LLaMA 3.3 70B · 4-Step Wizard</div>
+  <div style="font-size:11px;color:#5a6480">
+    Groq · LLaMA 3.3 70B · 4-Step Wizard
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
