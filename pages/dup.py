@@ -363,10 +363,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Layout ────────────────────────────────────────────────────────────────────
-left, right = st.columns([1.1, 2])
+left, right = st.columns([1.2, 1],gap="small")
 
 with left:
-    st.markdown("<div style='padding:24px 16px 0'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:24px 12px 0'>", unsafe_allow_html=True)
 
     # Hero
     st.markdown("""
@@ -629,9 +629,11 @@ Craft the most powerful email to get us to {v.n_target}. Sign as {v.cfg_name}.""
 
 # ── RIGHT PANEL ───────────────────────────────────────────────────────────────
 with right:
-    st.markdown("<div style='padding:24px 24px 0;border-left:1px solid var(--b1);min-height:calc(100vh - 64px)'>", unsafe_allow_html=True)
-
-    s = st.session_state.step
+    st.markdown(
+        "<div style='padding:24px 16px 0;border-left:1px solid var(--b1);height:auto;'>",
+        unsafe_allow_html=True
+    )
+s = st.session_state.step
 
     # ── Step 1 right panel: Agent cards ───────────────────────────────────────
     if s == 1:
