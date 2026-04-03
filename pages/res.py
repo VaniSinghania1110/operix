@@ -1429,12 +1429,23 @@ elif st.session_state.view == "results":
         cl, cr = st.columns([1.2, 1], gap="large")
         with cl:
             st.markdown('<div style="font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">📅 Execution Roadmap</div>', unsafe_allow_html=True)
+            import html as _h
             for i, ph in enumerate(phases):
                 is_last  = i == len(phases) - 1
                 risk_c2  = {"HIGH": "#ff4040", "MEDIUM": "#ffbe00", "LOW": "#00e887"}.get(ph.get("risk", "LOW"), "#00e887")
+                
+                # Sanitize actions — strip any HTML the LLM may have returned
+                clean_actions = []
+                for a in ph.get("actions", []):
+                    text = str(a)
+                    # If LLM returned raw HTML, strip tags entirely to get plain text
+                    text = re.sub(r'<[^>]+>', '', text).strip()
+                    if text:
+                        clean_actions.append(text)
+                
                 acts_html = "".join(
-                    f'<div class="phase-action"><span style="color:var(--ac);flex-shrink:0">→</span><span>{a}</span></div>'
-                    for a in ph.get("actions", [])
+                    f'<div class="phase-action"><span style="color:var(--ac);flex-shrink:0">→</span><span>{_h.escape(a)}</span></div>'
+                    for a in clean_actions
                 )
                 st.markdown(f"""
                 <div class="phase-item au" style="animation-delay:{i * 80}ms">
