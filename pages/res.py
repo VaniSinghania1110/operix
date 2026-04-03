@@ -13,7 +13,7 @@ Secrets: set GROQ_API_KEY in .streamlit/secrets.toml
 import streamlit as st
 import json, time, re
 from groq import Groq
-
+import html as _html
 # ── PAGE CONFIG ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="ResourceIQ — Optimization Agent",
