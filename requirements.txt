@@ -6,3 +6,4 @@ groq
 scikit-learn
 plotly
 python-dotenv
+langchain-groq
