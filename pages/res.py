@@ -1,12 +1,13 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║   ResourceIQ — RESOURCE OPTIMIZATION AGENT                  ║
-║   No hardcoded data. No dotenv. API key via sidebar.         ║
+║   No hardcoded data. API key via st.secrets only.            ║
 ║   Features: 5-Agent AI · What-if · Team View · Chat         ║
 ╚══════════════════════════════════════════════════════════════╝
 
 Run:  streamlit run resourceiq.py
 Needs: pip install streamlit groq
+Secrets: set GROQ_API_KEY in .streamlit/secrets.toml
 """
 
 import streamlit as st
@@ -20,6 +21,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# ── LOAD API KEY FROM SECRETS ──────────────────────────────────────────────────
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 # ── SESSION STATE ──────────────────────────────────────────────────────────────
 DEFAULTS = {
@@ -49,7 +53,7 @@ if not st.session_state.team_rows:
 # ── LLM HELPER ─────────────────────────────────────────────────────────────────
 def llm(messages, max_tokens=1400, temperature=0.35, api_key=""):
     if not api_key or not api_key.strip():
-        raise ValueError("Groq API key is missing. Please enter it in Step 1.")
+        raise ValueError("Groq API key is missing. Please set GROQ_API_KEY in your Streamlit secrets.")
     client = Groq(api_key=api_key)
     resp = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -63,7 +67,6 @@ def llm(messages, max_tokens=1400, temperature=0.35, api_key=""):
 def safe_json(text, fallback):
     try:
         clean = re.sub(r"```(?:json)?|```", "", text).strip()
-        # Strip any leading text before the first { or [
         match = re.search(r'[\[{]', clean)
         if match:
             clean = clean[match.start():]
@@ -773,12 +776,7 @@ if st.session_state.view == "step1":
 
     with left:
         st.markdown("""<div class="sec-card au d1"><div class="sec-hdr"><span class="sec-num">CONFIG</span><span class="sec-title" style="color:var(--ac)">Agent Configuration</span></div></div>""", unsafe_allow_html=True)
-        api_key = st.text_input(
-            "🔑 Groq API Key",
-            type="password",
-            value=st.secrets.get("GROQ_API_KEY", ""),
-            key="s1_api"
-        )
+        # ── API key is read from secrets — no user input needed ──
         org_name = st.text_input("🏢 Organisation / Project Name", placeholder="e.g. Acme Engineering, Product Team Q4…", key="s1_org")
         goal     = st.text_area("🎯 Optimisation Goal", placeholder="e.g. Reduce infrastructure costs by 30%, consolidate duplicate tools…", height=80, key="s1_goal")
 
@@ -835,15 +833,14 @@ if st.session_state.view == "step1":
     with nc:
         st.markdown('<div class="btn-next">', unsafe_allow_html=True)
         if st.button("Next: Add Your Team →", key="s1_next", use_container_width=True):
-            if not api_key.strip():
-                st.warning("⚠️ Please enter your Groq API key.")
-            elif not org_name.strip():
+            if not org_name.strip():
                 st.warning("⚠️ Please enter an organisation name.")
             elif not goal.strip():
                 st.warning("⚠️ Please describe your optimisation goal.")
             else:
                 st.session_state.inputs.update({
-                    "api_key": api_key, "org_name": org_name, "goal": goal,
+                    "api_key": GROQ_API_KEY,   # always from secrets
+                    "org_name": org_name, "goal": goal,
                     "threshold": threshold, "budget": budget,
                     "strategy": strategy, "timeframe": timeframe,
                 })
@@ -912,7 +909,6 @@ elif st.session_state.view == "step2":
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Team preview cards
     valid_team = [r for r in rows if r.get("name", "").strip()]
     if valid_team:
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
@@ -1128,7 +1124,7 @@ elif st.session_state.view == "running":
         result = run_multi_agent(
             st.session_state.inputs,
             step_ph, log_ph, progress_ph,
-            st.session_state.inputs.get("api_key", ""),
+            GROQ_API_KEY,   # always from secrets
         )
         st.session_state.analysis   = result
         st.session_state.view       = "results"
@@ -1156,7 +1152,7 @@ elif st.session_state.view == "results":
     report     = analysis.get("report",     {})
     team_data  = inp.get("team",       [])
     resources  = inp.get("resources",  [])
-    api_key    = inp.get("api_key",    "")
+    api_key    = GROQ_API_KEY   # always from secrets
 
     score_before = report.get("health_before", 45)
     score_after  = report.get("health_after",  80)
@@ -1569,7 +1565,7 @@ elif st.session_state.view == "results":
                 if st.button(f"→ {preset}", key=f"preset_{i}", use_container_width=True):
                     st.session_state["wi_input"] = preset
                     with st.spinner("Simulating…"):
-                        st.session_state.whatif_result = run_whatif(preset, analysis, inp, api_key)
+                        st.session_state.whatif_result = run_whatif(preset, analysis, inp, GROQ_API_KEY)
                     st.rerun()
 
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
@@ -1585,7 +1581,7 @@ elif st.session_state.view == "results":
                 if wi_text.strip():
                     st.session_state["wi_input"] = wi_text
                     with st.spinner("Simulating…"):
-                        st.session_state.whatif_result = run_whatif(wi_text, analysis, inp, api_key)
+                        st.session_state.whatif_result = run_whatif(wi_text, analysis, inp, GROQ_API_KEY)
                     st.rerun()
 
         if st.session_state.whatif_result:
@@ -1663,7 +1659,7 @@ elif st.session_state.view == "results":
                     if st.button(s, key=f"chat_sug_{i}", use_container_width=True):
                         st.session_state.chat_history.append({"role": "user", "content": s})
                         with st.spinner(""):
-                            reply = chat_agent(s, analysis, inp, api_key)
+                            reply = chat_agent(s, analysis, inp, GROQ_API_KEY)
                         st.session_state.chat_history.append({"role": "assistant", "content": reply})
                         st.rerun()
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
@@ -1689,7 +1685,7 @@ elif st.session_state.view == "results":
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.spinner(""):
-                reply = chat_agent(user_input, analysis, inp, api_key)
+                reply = chat_agent(user_input, analysis, inp, GROQ_API_KEY)
             st.session_state.chat_history.append({"role": "assistant", "content": reply})
             st.rerun()
 
